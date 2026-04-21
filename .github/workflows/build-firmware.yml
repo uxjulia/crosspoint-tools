@@ -104,12 +104,13 @@ jobs:
           VERSION=$(grep -oP 'version\s*=\s*\K.*' platformio.ini | head -1)
           echo "version=${VERSION}-dev+${{ steps.check.outputs.commit_short }}" >> "$GITHUB_OUTPUT"
 
-          # Changelog as JSON array
-          CHANGELOG=$(git log $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD \
-            --pretty=format:'{"hash":"%H","hashShort":"%h","author":"%an","date":"%aI","message":"%s"}' \
-            | jq -s '.')
-          # Write to file to avoid GITHUB_OUTPUT line length issues
-          echo "$CHANGELOG" > /tmp/changelog.json
+          # Changelog as JSON array — use jq to safely escape commit messages
+          BASE_REF=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          git log "${BASE_REF}..HEAD" --pretty=format:"%H%x00%h%x00%an%x00%aI%x00%s" | while IFS= read -r line; do
+            IFS=$'\0' read -r hash short author date msg <<< "$line"
+            jq -n --arg h "$hash" --arg s "$short" --arg a "$author" --arg d "$date" --arg m "$msg" \
+              '{hash:$h, hashShort:$s, author:$a, date:$d, message:$m}'
+          done | jq -s '.' > /tmp/changelog.json
 
       - name: Upload firmware to R2
         if: steps.check.outputs.skip == 'false'
