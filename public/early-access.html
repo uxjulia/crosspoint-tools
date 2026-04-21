@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="antialiased">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,265 +7,168 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    /* Early Access page-specific styles */
-    .ea-hero {
-      text-align: center;
-      padding: 2.5rem 0 1.5rem;
-      position: relative;
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['InterVariable', 'Inter', 'sans-serif'],
+            serif: ['Lora', 'serif'],
+            mono: ['"Geist Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5f3',
+              100: '#d6e5de',
+              200: '#b3cfc2',
+              300: '#8fb9a6',
+              400: '#69917D',
+              500: '#4a7a62',
+              600: '#3d6652',
+              700: '#315243',
+              800: '#253e33',
+              900: '#1a2c24',
+            },
+          },
+        },
+      },
     }
-
-    .ea-hero::before {
-      content: '';
-      position: absolute;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 400px;
-      height: 200px;
-      background: radial-gradient(ellipse, var(--early-access-glow) 0%, transparent 70%);
-      pointer-events: none;
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .animate-spin-slow { animation: spin 1.2s linear infinite; }
+      .animate-pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
     }
-
-    .ea-hero h1 {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, var(--early-access) 0%, #a29bfe 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .ea-hero .subtitle {
-      color: var(--text-dim);
-      font-size: 0.95rem;
-      margin-top: 0.4rem;
-    }
-
-    .build-card {
-      background: var(--bg-card);
-      border: 1px solid rgba(253, 121, 168, 0.2);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .build-card .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .build-card .header h2 {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    .changelog-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-
-    .changelog-header h3 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .commit-count {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    .no-builds {
-      text-align: center;
-      padding: 3rem 0;
-      color: var(--text-muted);
-    }
-
-    .no-builds p {
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-    }
-
-    .flash-section {
-      text-align: center;
-      padding: 1rem 0;
-    }
-
-    .flash-section .size-info {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 0.5rem;
-    }
-
-    .ea-warning {
-      background: rgba(253, 121, 168, 0.06);
-      border: 1px solid rgba(253, 121, 168, 0.15);
-      border-radius: var(--radius-sm);
-      padding: 0.75rem 1rem;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-bottom: 1.5rem;
-      line-height: 1.5;
-    }
-
-    .ea-warning strong {
-      color: var(--early-access);
-    }
-
-    .refresh-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.8rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-sm);
-      transition: all 0.15s;
-    }
-
-    .refresh-btn:hover {
-      color: var(--text);
-      background: var(--bg-surface);
-    }
-
-    .timestamp {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-top: 2rem;
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
   </style>
 </head>
-<body>
-  <nav>
-    <a href="/" class="logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:0.4rem;">Cross<span>Point</span> Tools</a>
-    <div class="nav-links">
-      <a href="/">Stable</a>
-      <a href="/early-access" class="active">Early Access</a>
+<body class="min-h-dvh bg-stone-50 font-sans">
+  <nav class="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
+    <div class="mx-auto flex max-w-2xl items-center justify-between px-6 py-3">
+      <a href="/" class="flex items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
+        <img src="/logo.png" alt="" class="size-7 rounded-md">
+        <span class="text-base/6 font-medium tracking-tight sm:text-sm/6">CrossPoint Tools</span>
+      </a>
+      <div class="flex gap-1">
+        <a href="/" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Stable</a>
+        <a href="/early-access" class="rounded-md bg-stone-100 px-3 py-1.5 text-sm/5 font-medium text-stone-900 no-underline">Early Access</a>
+      </div>
     </div>
   </nav>
 
-  <div class="container">
+  <main class="mx-auto max-w-2xl px-6">
+    <div class="pb-2 pt-12 sm:pt-16">
+      <p class="text-sm font-medium text-brand-500">Early Access</p>
+      <h1 class="mt-1 max-w-[24ch] font-serif text-4xl font-medium tracking-tight text-stone-900 text-balance sm:text-3xl">Nightly Builds</h1>
+      <p class="mt-3 max-w-[48ch] text-lg text-stone-500 text-pretty sm:text-base/7">Latest firmware built automatically from the master branch</p>
+    </div>
+
+    <div class="my-6 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm/6 text-amber-900">
+      <span class="font-semibold">Heads up:</span> These builds haven't been through full QA. They contain the newest features and fixes but may introduce regressions. You can always <a href="/" class="font-medium text-brand-500 underline underline-offset-2">flash the stable release</a>.
+    </div>
+
     <!-- Browser check -->
-    <div id="browser-warning" class="browser-warning hidden">
-      <h2>Browser Not Supported</h2>
-      <p class="text-dim">WebSerial requires Chrome or Edge on desktop.</p>
+    <div id="browser-warning" class="hidden py-12 text-center">
+      <h2 class="font-serif text-xl font-medium text-red-800">Browser Not Supported</h2>
+      <p class="mt-2 text-base/7 text-stone-500 sm:text-sm/6">WebSerial requires Chrome or Edge on desktop.</p>
     </div>
 
     <div id="main-content">
-      <div class="ea-hero">
-        <h1>Early Access Builds</h1>
-        <p class="subtitle">Latest firmware built automatically from the master branch</p>
+      <!-- Loading -->
+      <div id="loading" class="py-16 text-center">
+        <div class="mx-auto size-5 animate-spin-slow text-stone-400" aria-hidden="true">&#x25E0;</div>
+        <p class="mt-3 text-base/7 text-stone-400 sm:text-sm/6">Loading build info...</p>
       </div>
 
-      <div class="ea-warning">
-        <strong>Heads up:</strong> These builds are compiled directly from the latest source code and haven't been through the full release QA process. They contain the newest features and fixes, but may introduce regressions. You can always flash back to the stable release from the <a href="/" style="color: var(--early-access);">main page</a>.
+      <!-- No builds -->
+      <div id="no-builds" class="hidden py-16 text-center">
+        <h2 class="font-serif text-lg font-medium text-stone-700">No Builds Yet</h2>
+        <p class="mt-2 text-base/7 text-stone-400 sm:text-sm/6">Builds run automatically when new commits are pushed to master.</p>
       </div>
 
-      <!-- Loading state -->
-      <div id="loading" class="no-builds">
-        <div class="step-icon running" style="font-size: 1.5rem; margin: 0 auto 0.5rem; width: 30px; height: 30px;"></div>
-        <p>Loading build info...</p>
-      </div>
+      <!-- Build content -->
+      <div id="build-content" class="hidden space-y-4 pb-16">
 
-      <!-- No builds state -->
-      <div id="no-builds" class="no-builds hidden">
-        <h2>No Builds Yet</h2>
-        <p>No early access builds have been triggered. Builds run automatically when new commits are pushed to master.</p>
-      </div>
-
-      <!-- Build info -->
-      <div id="build-content" class="hidden">
         <!-- Build Status Card -->
-        <div class="build-card">
-          <div class="header">
-            <h2>
-              <span class="status-dot" id="status-dot"></span>
+        <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+          <div class="flex items-center justify-between">
+            <h2 class="flex items-center gap-2 font-serif text-lg font-medium text-stone-900 sm:text-base/6">
+              <span class="size-2 shrink-0 rounded-full" id="status-dot"></span>
               <span id="build-status-text">Build</span>
             </h2>
-            <div class="flex items-center gap-1">
-              <span class="badge" id="build-badge"></span>
-              <button class="refresh-btn" onclick="loadBuildInfo()" title="Refresh">&#8635;</button>
+            <div class="flex items-center gap-2">
+              <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" id="build-badge"></span>
+              <button onclick="loadBuildInfo()" class="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600" title="Refresh">
+                <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"/></svg>
+              </button>
             </div>
           </div>
 
-          <div class="build-info">
-            <div class="build-info-item">
-              <div class="label">Version</div>
-              <div class="value mono" id="build-version">—</div>
+          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-lg bg-stone-50 px-4 py-3">
+              <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Version</div>
+              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-version">&mdash;</div>
             </div>
-            <div class="build-info-item">
-              <div class="label">Build Date</div>
-              <div class="value" id="build-date">—</div>
+            <div class="rounded-lg bg-stone-50 px-4 py-3">
+              <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Built</div>
+              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-date">&mdash;</div>
             </div>
-            <div class="build-info-item">
-              <div class="label">Commit</div>
-              <div class="value mono" id="build-commit">—</div>
+            <div class="rounded-lg bg-stone-50 px-4 py-3">
+              <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Commit</div>
+              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-commit">&mdash;</div>
             </div>
-            <div class="build-info-item">
-              <div class="label">Firmware Size</div>
-              <div class="value" id="build-size">—</div>
+            <div class="rounded-lg bg-stone-50 px-4 py-3">
+              <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Size</div>
+              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-size">&mdash;</div>
             </div>
           </div>
 
-          <!-- Flash Button -->
-          <div id="flash-section" class="flash-section hidden">
-            <button class="btn btn-early-access btn-lg btn-block" id="flash-ea-btn" disabled>
+          <div id="flash-section" class="mt-5 hidden">
+            <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:cursor-not-allowed" id="flash-ea-btn" disabled>
               Flash Early Access Build
             </button>
           </div>
-
-          <!-- Building state -->
-          <div id="building-section" class="flash-section hidden">
-            <div class="alert alert-warning">
-              A build is currently in progress. Check back in a few minutes.
-            </div>
+          <div id="building-section" class="mt-5 hidden">
+            <div class="rounded-lg bg-amber-50 px-4 py-3 text-sm/6 text-amber-800">A build is currently in progress. Check back in a few minutes.</div>
           </div>
-
-          <!-- Failed state -->
-          <div id="failed-section" class="flash-section hidden">
-            <div class="alert alert-danger" id="build-error"></div>
+          <div id="failed-section" class="mt-5 hidden">
+            <div class="rounded-lg bg-red-50 px-4 py-3 text-sm/6 text-red-800" id="build-error"></div>
           </div>
         </div>
 
-        <!-- Flash Progress -->
-        <div class="card hidden" id="progress-card">
-          <h2 id="progress-title">Flashing Early Access Build...</h2>
-          <ul class="steps" id="steps-list"></ul>
-          <div class="mt-2" id="progress-status"></div>
+        <!-- Progress Card -->
+        <div class="hidden rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="progress-card">
+          <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6" id="progress-title">Flashing Early Access Build...</h2>
+          <ul id="steps-list" role="list" class="mt-4 divide-y divide-stone-100"></ul>
+          <div class="mt-4" id="progress-status"></div>
         </div>
 
         <!-- Changelog Card -->
-        <div class="build-card" id="changelog-card" style="border-color: var(--border);">
-          <div class="changelog-header">
-            <h3>Changelog</h3>
-            <span class="commit-count" id="commit-count"></span>
+        <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+          <div class="flex items-center justify-between">
+            <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Changelog</h2>
+            <span class="font-mono text-xs text-stone-400 tabular-nums" id="commit-count"></span>
           </div>
-          <p class="text-dim mb-2" style="font-size: 0.8rem;">Commits since the last tagged release</p>
-          <ul class="changelog" id="changelog-list">
-            <li class="text-muted">No commits found</li>
+          <p class="mt-1 text-sm/6 text-stone-400">Commits since the last tagged release</p>
+          <ul id="changelog-list" role="list" class="mt-4 max-h-96 divide-y divide-stone-100 overflow-y-auto">
+            <li class="py-3 text-sm text-stone-400">No commits found</li>
           </ul>
         </div>
-      </div>
 
-      <p class="timestamp" id="page-timestamp"></p>
+        <p class="pt-4 text-center font-mono text-xs text-stone-400 tabular-nums" id="page-timestamp"></p>
+      </div>
     </div>
-  </div>
+  </main>
 
   <script type="module">
     import { CrossPointFlasher, fetchEarlyAccessFirmware, fetchBuildMeta } from '/js/flasher.js';
 
-    // Browser check
     if (!('serial' in navigator)) {
       document.getElementById('browser-warning').classList.remove('hidden');
       document.getElementById('main-content').classList.add('hidden');
@@ -273,13 +176,12 @@
 
     function formatDate(isoStr) {
       return new Date(isoStr).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
       });
     }
 
     function formatSize(bytes) {
-      if (!bytes) return '—';
+      if (!bytes) return '\u2014';
       return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
     }
 
@@ -290,56 +192,59 @@
       if (mins < 60) return `${mins}m ago`;
       const hrs = Math.floor(mins / 60);
       if (hrs < 24) return `${hrs}h ago`;
-      const days = Math.floor(hrs / 24);
-      return `${days}d ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
     window.loadBuildInfo = async function loadBuildInfo() {
-      const loading = document.getElementById('loading');
-      const noBuilds = document.getElementById('no-builds');
-      const buildContent = document.getElementById('build-content');
-
-      loading.classList.remove('hidden');
-      noBuilds.classList.add('hidden');
-      buildContent.classList.add('hidden');
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('no-builds').classList.add('hidden');
+      document.getElementById('build-content').classList.add('hidden');
 
       const meta = await fetchBuildMeta();
-      loading.classList.add('hidden');
+      document.getElementById('loading').classList.add('hidden');
 
       if (!meta) {
-        noBuilds.classList.remove('hidden');
+        document.getElementById('no-builds').classList.remove('hidden');
         return;
       }
 
-      buildContent.classList.remove('hidden');
+      document.getElementById('build-content').classList.remove('hidden');
 
       // Status
       const dot = document.getElementById('status-dot');
       const badge = document.getElementById('build-badge');
       const statusText = document.getElementById('build-status-text');
 
-      dot.className = 'status-dot ' + meta.status;
       if (meta.status === 'success') {
-        badge.className = 'badge badge-early';
+        dot.className = 'size-2 shrink-0 rounded-full bg-brand-500';
+        badge.className = 'rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-500';
         badge.textContent = 'Ready';
         statusText.textContent = 'Latest Build';
       } else if (meta.status === 'building') {
-        badge.className = 'badge badge-building';
+        dot.className = 'size-2 shrink-0 rounded-full bg-amber-500 animate-pulse-dot';
+        badge.className = 'rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700';
         badge.textContent = 'Building';
         statusText.textContent = 'Build In Progress';
       } else {
-        badge.className = 'badge badge-failed';
+        dot.className = 'size-2 shrink-0 rounded-full bg-red-500';
+        badge.className = 'rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700';
         badge.textContent = 'Failed';
         statusText.textContent = 'Build Failed';
       }
 
       // Info
-      document.getElementById('build-version').textContent = meta.version || '—';
-      document.getElementById('build-date').textContent = meta.buildDate ? formatDate(meta.buildDate) : '—';
-      document.getElementById('build-commit').textContent = meta.commitShort || '—';
+      document.getElementById('build-version').textContent = meta.version || '\u2014';
+      document.getElementById('build-date').textContent = meta.buildDate ? formatDate(meta.buildDate) : '\u2014';
+      document.getElementById('build-commit').textContent = meta.commitShort || '\u2014';
       document.getElementById('build-size').textContent = formatSize(meta.firmwareSize);
 
-      // Show appropriate section
+      // Toggle sections
       document.getElementById('flash-section').classList.toggle('hidden', meta.status !== 'success');
       document.getElementById('building-section').classList.toggle('hidden', meta.status !== 'building');
       document.getElementById('failed-section').classList.toggle('hidden', meta.status !== 'failed');
@@ -353,39 +258,30 @@
       const changelogList = document.getElementById('changelog-list');
       const commitCount = document.getElementById('commit-count');
 
-      if (meta.changelog && meta.changelog.length > 0) {
+      if (meta.changelog?.length > 0) {
         commitCount.textContent = `${meta.changelog.length} commit${meta.changelog.length !== 1 ? 's' : ''}`;
         changelogList.innerHTML = meta.changelog.map(c => `
-          <li>
-            <span class="commit-hash">${c.hashShort}</span>
-            <div style="flex:1; min-width:0;">
-              <div class="commit-msg">${escapeHtml(c.message.split('\n')[0])}</div>
-              <div class="commit-author">${escapeHtml(c.author)}</div>
+          <li class="flex gap-3 py-3 text-sm">
+            <span class="shrink-0 font-mono text-xs text-brand-500 pt-0.5 tabular-nums">${c.hashShort}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-stone-800">${escapeHtml(c.message.split('\n')[0])}</div>
+              <div class="text-xs text-stone-400">${escapeHtml(c.author)}</div>
             </div>
-            <span class="commit-date">${c.date ? relativeTime(c.date) : ''}</span>
+            <span class="shrink-0 text-xs text-stone-400 pt-0.5 tabular-nums">${c.date ? relativeTime(c.date) : ''}</span>
           </li>
         `).join('');
       } else {
         commitCount.textContent = '';
-        changelogList.innerHTML = '<li class="text-muted">No changelog available</li>';
+        changelogList.innerHTML = '<li class="py-3 text-sm text-stone-400">No changelog available</li>';
       }
 
-      // Timestamp
       document.getElementById('page-timestamp').textContent =
         meta.buildDate ? `Last build: ${formatDate(meta.buildDate)}` : '';
     };
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    // Initial load
     await loadBuildInfo();
 
     // --- Flash Logic ---
-
     const STEPS = [
       'Connect to device',
       'Validate partition table',
@@ -396,14 +292,16 @@
     ];
 
     function renderSteps(states) {
-      const stepsList = document.getElementById('steps-list');
-      stepsList.innerHTML = STEPS.map((name, i) => {
+      const list = document.getElementById('steps-list');
+      list.innerHTML = STEPS.map((name, i) => {
         const st = states[i] || 'pending';
-        return `<li class="${st}">
-          <span class="step-icon ${st}"></span>
-          <span>${name}</span>
-          ${st === 'running' && name === 'Flash firmware' ? '<div class="progress-bar"><div class="progress-bar-fill" id="flash-progress" style="width:0%"></div></div>' : ''}
-        </li>`;
+        const colors = { pending: 'text-stone-400', running: 'text-stone-900', done: 'text-brand-500', error: 'text-red-600' };
+        const icons = { pending: '\u25CB', running: '\u25E0', done: '\u2713', error: '\u2717' };
+        const spin = st === 'running' ? 'animate-spin-slow' : '';
+        const bar = (st === 'running' && name === 'Flash firmware')
+          ? '<div class="flex-1 h-1 rounded-full bg-stone-200 overflow-hidden"><div class="bg-brand-500 h-full rounded-full transition-all duration-200" id="flash-progress" style="width:0%"></div></div>'
+          : '';
+        return `<li class="flex items-center gap-3 py-3 text-sm/5 ${colors[st]}"><span class="size-5 flex items-center justify-center shrink-0 ${spin}" aria-hidden="true">${icons[st]}</span><span class="${bar ? '' : 'flex-1'}">${name}</span>${bar}</li>`;
       }).join('');
     }
 
@@ -420,11 +318,11 @@
       renderSteps(states);
 
       try {
-        progressStatus.innerHTML = '<span class="text-dim">Downloading early access firmware...</span>';
+        progressStatus.innerHTML = '<p class="text-sm text-stone-400">Downloading early access firmware...</p>';
         const firmware = await fetchEarlyAccessFirmware();
         progressStatus.innerHTML = '';
 
-        const flasher = new CrossPointFlasher();
+        const flasher = new CrossPointFlasher('x4');
         await flasher.flashFirmware(firmware, {
           onStepChange: (idx, name, status) => {
             states[idx] = status;
@@ -438,12 +336,12 @@
           },
         });
 
-        progressStatus.innerHTML = '<div class="alert alert-info">Flash complete! Your device will restart with the early access firmware.</div>';
+        progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-600">Flash complete! Your device will restart with the early access firmware.</div>';
       } catch (err) {
         const failIdx = states.findIndex(s => s === 'running');
         if (failIdx >= 0) states[failIdx] = 'error';
         renderSteps(states);
-        progressStatus.innerHTML = `<div class="alert alert-danger">${escapeHtml(err.message)}</div>`;
+        progressStatus.innerHTML = `<div class="rounded-lg bg-red-50 px-4 py-3 text-sm/6 text-red-800">${escapeHtml(err.message)}</div>`;
       }
 
       flashBtn.disabled = false;

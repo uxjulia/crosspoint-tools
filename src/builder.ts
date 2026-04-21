@@ -1,7 +1,7 @@
 import { getSandbox } from '@cloudflare/sandbox';
 import type { Env, BuildMetadata, ChangelogEntry } from './types';
 
-const BUILD_TIMEOUT = 600_000; // 10 minutes for full PlatformIO build
+const BUILD_TIMEOUT = 900_000; // 15 minutes for full PlatformIO build
 
 export async function triggerBuild(env: Env, commit: string, commitMessage: string): Promise<void> {
   // Mark build as started

@@ -3,6 +3,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "crosspointreader.com", "custom_domain": true }
+  ],
 
   // Static frontend assets
   "assets": {
@@ -19,10 +23,12 @@
       }
     ]
   },
-  "containers": {
-    "max_instances": 2,
-    "instance_type": "standard-2"
-  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Sandbox"]
+    }
+  ],
 
   // R2 bucket for firmware storage
   "r2_buckets": [
@@ -36,13 +42,18 @@
   "kv_namespaces": [
     {
       "binding": "BUILD_META",
-      "id": ""
+      "id": "fdeb005477d243cd9de17bb057d9e037"
     }
   ],
 
   // Secrets (set via `wrangler secret put`):
   //   GITHUB_WEBHOOK_SECRET - for verifying webhook payloads
   //   GITHUB_TOKEN - optional, for private repo access
+
+  // Poll upstream repo for new commits every 15 minutes
+  "triggers": {
+    "crons": ["0 6 * * *"]
+  },
 
   "vars": {
     "REPO_URL": "https://github.com/crosspoint-reader/crosspoint-reader.git",

@@ -3,7 +3,6 @@
  * Uses esptool-js via ESM import for WebSerial-based OTA flashing.
  */
 
-// We load esptool-js dynamically from esm.sh CDN
 let ESPLoader, Transport;
 
 export async function loadEsptool() {
@@ -13,7 +12,7 @@ export async function loadEsptool() {
   Transport = mod.Transport;
 }
 
-// --- CRC32 (for OTA partition validation) ---
+// --- CRC32 ---
 
 const CRC32_TABLE = new Uint32Array(256);
 (function buildTable() {
@@ -54,8 +53,7 @@ function isEqualBytes(a, b) {
 }
 
 function generateCrc32Le(sequence) {
-  const value = crc32(u32ToLeBytes(sequence));
-  return u32ToLeBytes(value);
+  return u32ToLeBytes(crc32(u32ToLeBytes(sequence)));
 }
 
 // --- Partition Layouts ---
@@ -64,6 +62,12 @@ export const X4_LAYOUT = {
   app0Offset: 0x10000,
   app1Offset: 0x650000,
   appSize: 0x640000,
+};
+
+export const X3_LAYOUT = {
+  app0Offset: 0x10000,
+  app1Offset: 0x780000,
+  appSize: 0x770000,
 };
 
 export const X4_PARTITION_TABLE = [
@@ -75,7 +79,27 @@ export const X4_PARTITION_TABLE = [
   { type: 'data-coredump', offset: 0xff0000, size: 0x10000 },
 ];
 
-// --- OTA Partition State ---
+export const X3_PARTITION_TABLE = [
+  { type: 'data-nvs', offset: 0x9000, size: 0x5000 },
+  { type: 'data-ota', offset: 0xe000, size: 0x2000 },
+  { type: 'app-ota_0', offset: 0x10000, size: 0x770000 },
+  { type: 'app-ota_1', offset: 0x780000, size: 0x770000 },
+  { type: 'data-spiffs', offset: 0xef0000, size: 0x100000 },
+  { type: 'data-coredump', offset: 0xff0000, size: 0x10000 },
+];
+
+export function getLayout(model) {
+  return model === 'x3' ? X3_LAYOUT : X4_LAYOUT;
+}
+
+function getExpectedPartitionTables(model) {
+  // X3 can have either X3 or X4 partition layout
+  return model === 'x3'
+    ? [X3_PARTITION_TABLE, X4_PARTITION_TABLE]
+    : [X4_PARTITION_TABLE];
+}
+
+// --- OTA Partition ---
 
 const OTA_STATE = { NEW: 0, PENDING_VERIFY: 1, VALID: 2, INVALID: 3, ABORTED: 4, UNDEFINED: 0xFFFFFFFF };
 const INVALID_STATES = new Set([OTA_STATE.INVALID, OTA_STATE.ABORTED]);
@@ -86,18 +110,12 @@ function parseOtaPartitionSlot(data, offset) {
   const stateVal = leBytesToU32(data.slice(offset + 0x18, offset + 0x1C));
   const crcBytes = data.slice(offset + 0x1C, offset + 0x20);
   const expectedCrc = generateCrc32Le(sequence);
-  return {
-    sequence,
-    state: stateVal,
-    crcValid: isEqualBytes(crcBytes, expectedCrc),
-  };
+  return { sequence, state: stateVal, crcValid: isEqualBytes(crcBytes, expectedCrc) };
 }
 
 function parseOtadata(data) {
-  const slot0 = parseOtaPartitionSlot(data, 0);       // app0
-  const slot1 = parseOtaPartitionSlot(data, 0x1000);   // app1
-
-  // Find which partition is currently booted (highest valid sequence)
+  const slot0 = parseOtaPartitionSlot(data, 0);
+  const slot1 = parseOtaPartitionSlot(data, 0x1000);
   const candidates = [];
   if (!INVALID_STATES.has(slot0.state) && slot0.crcValid) candidates.push({ label: 'app0', ...slot0 });
   if (!INVALID_STATES.has(slot1.state) && slot1.crcValid) candidates.push({ label: 'app1', ...slot1 });
@@ -106,7 +124,6 @@ function parseOtadata(data) {
   const currentBoot = candidates[0]?.label || 'app0';
   const backupPartition = currentBoot === 'app0' ? 'app1' : 'app0';
   const nextSequence = (candidates[0]?.sequence || 0) + 1;
-
   return { slot0, slot1, currentBoot, backupPartition, nextSequence };
 }
 
@@ -119,42 +136,62 @@ function buildNewOtadata(existingData, backupPartition, nextSequence) {
   return newData;
 }
 
+// --- Partition Table Parsing ---
+
+const PARTITION_TYPES = {
+  0x00: { 0x10: 'app-ota_0', 0x11: 'app-ota_1' },
+  0x01: { 0x00: 'data-ota', 0x01: 'data-phy', 0x02: 'data-nvs', 0x03: 'data-coredump', 0x82: 'data-spiffs' },
+};
+
+function parsePartitionTable(data) {
+  const partitions = [];
+  for (let offset = 0; offset < data.length; offset += 32) {
+    const chunk = data.slice(offset, offset + 32);
+    if (chunk.length !== 32) break;
+    let allFF = true;
+    for (let i = 0; i < 32; i++) { if (chunk[i] !== 0xFF) { allFF = false; break; } }
+    if (allFF) break;
+    if (chunk[0] === 0xEB && chunk[1] === 0xEB) continue;
+
+    const type = PARTITION_TYPES[chunk[2]]?.[chunk[3]] || 'unknown';
+    const off = leBytesToU32(chunk.slice(4, 8));
+    const size = leBytesToU32(chunk.slice(8, 12));
+    partitions.push({ type, offset: off, size });
+  }
+  return partitions;
+}
+
+function matchesPartitionTable(actual, expected) {
+  return actual.length === expected.length &&
+    expected.every((exp, i) =>
+      actual[i].type === exp.type &&
+      actual[i].offset === exp.offset &&
+      actual[i].size === exp.size
+    );
+}
+
 // --- Main Flasher Class ---
 
 export class CrossPointFlasher {
-  constructor() {
+  constructor(model = 'x4') {
     this.espLoader = null;
-    this.layout = X4_LAYOUT;
-    this.onStep = null;      // (stepIndex, stepName, status) => void
-    this.onProgress = null;  // (stepName, current, total) => void
-    this.onLog = null;       // (message) => void
-  }
-
-  log(msg) {
-    if (this.onLog) this.onLog(msg);
-    console.log('[flasher]', msg);
+    this.model = model;
+    this.layout = getLayout(model);
   }
 
   async connect() {
     await loadEsptool();
-
     if (!('serial' in navigator && navigator.serial)) {
       throw new Error('WebSerial is not supported. Please use Chrome or Edge.');
     }
-
     const port = await navigator.serial.requestPort({
       filters: [{ usbVendorId: 12346, usbProductId: 4097 }],
     });
-
     const transport = new Transport(port, false);
     this.espLoader = new ESPLoader({
-      transport,
-      baudrate: 115200,
-      romBaudrate: 115200,
-      enableTracing: false,
+      transport, baudrate: 115200, romBaudrate: 115200, enableTracing: false,
     });
     await this.espLoader.main();
-    this.log('Connected to device');
   }
 
   async disconnect(skipReset = false) {
@@ -162,136 +199,133 @@ export class CrossPointFlasher {
     await this.espLoader.after(skipReset ? 'no_reset_stub' : 'hard_reset');
     await this.espLoader.transport.disconnect();
     this.espLoader = null;
-    this.log('Disconnected');
   }
 
   async validatePartitionTable() {
     const data = await this.espLoader.readFlash(0x8000, 0x2000);
-    const partitions = [];
+    const partitions = parsePartitionTable(data);
+    const expected = getExpectedPartitionTables(this.model);
+    const matched = expected.find(t => matchesPartitionTable(partitions, t));
 
-    for (let offset = 0; offset < data.length; offset += 32) {
-      const chunk = data.slice(offset, offset + 32);
-      if (chunk.length !== 32) break;
-      // Check for end marker (all 0xFF)
-      let allFF = true;
-      for (let i = 0; i < 32; i++) { if (chunk[i] !== 0xFF) { allFF = false; break; } }
-      if (allFF) break;
-      // Skip MD5 record
-      if (chunk[0] === 0xEB && chunk[1] === 0xEB) continue;
-
-      const TYPES = {
-        0x00: { 0x10: 'app-ota_0', 0x11: 'app-ota_1' },
-        0x01: { 0x00: 'data-ota', 0x02: 'data-nvs', 0x03: 'data-coredump', 0x82: 'data-spiffs' },
-      };
-      const type = TYPES[chunk[2]]?.[chunk[3]] || 'unknown';
-      const off = leBytesToU32(chunk.slice(4, 8));
-      const size = leBytesToU32(chunk.slice(8, 12));
-      partitions.push({ type, offset: off, size });
+    if (!matched) {
+      throw new Error(`Unexpected partition layout for ${this.model.toUpperCase()}. Make sure you selected the correct device model.`);
     }
 
-    // Validate against X4 layout
-    const expected = X4_PARTITION_TABLE;
-    const matches = partitions.length === expected.length &&
-      expected.every((exp, i) =>
-        partitions[i].type === exp.type &&
-        partitions[i].offset === exp.offset &&
-        partitions[i].size === exp.size
-      );
-
-    if (!matches) {
-      throw new Error('Unexpected partition layout. Make sure this is an X4 device.');
+    // If X3 device has X4 partition layout, use X4 layout
+    if (matchesPartitionTable(partitions, X3_PARTITION_TABLE)) {
+      this.layout = X3_LAYOUT;
+    } else {
+      this.layout = X4_LAYOUT;
     }
-
-    this.log('Partition table validated (X4)');
   }
 
-  async flashFirmware(firmwareData, { onStepChange, onProgress } = {}) {
+  // --- OTA Flash (firmware to backup partition) ---
+
+  async flashFirmware(firmwareData, { onStepChange, onProgress, skipReset = false } = {}) {
     const steps = [
       'Connect to device',
       'Validate partition table',
       'Read OTA data',
       'Flash firmware',
       'Update boot partition',
-      'Reset device',
+      skipReset ? 'Disconnect' : 'Reset device',
     ];
+    const step = (idx, status) => { if (onStepChange) onStepChange(idx, steps[idx], status); };
 
-    const step = (idx, status) => {
-      if (onStepChange) onStepChange(idx, steps[idx], status);
-    };
-
-    // Step 0: Connect
     step(0, 'running');
     await this.connect();
     step(0, 'done');
 
-    // Step 1: Validate
     step(1, 'running');
     await this.validatePartitionTable();
     step(1, 'done');
 
-    // Step 2: Read OTA data
     step(2, 'running');
     const otaRaw = await this.espLoader.readFlash(0xE000, 0x2000, (_, p, t) => {
       if (onProgress) onProgress('Read OTA data', p, t);
     });
     const ota = parseOtadata(otaRaw);
-    this.log(`Current boot: ${ota.currentBoot}, will flash to: ${ota.backupPartition}`);
     step(2, 'done');
 
-    // Step 3: Flash firmware to backup partition
     step(3, 'running');
     const targetOffset = ota.backupPartition === 'app0' ? this.layout.app0Offset : this.layout.app1Offset;
-
-    if (firmwareData.length > this.layout.appSize) {
-      throw new Error(`Firmware too large: ${firmwareData.length} bytes (max ${this.layout.appSize})`);
-    }
-    if (firmwareData.length < 0xF0000) {
-      throw new Error('Firmware seems too small. Are you sure this is the right file?');
-    }
+    if (firmwareData.length > this.layout.appSize) throw new Error(`Firmware too large: ${firmwareData.length} bytes (max ${this.layout.appSize})`);
+    if (firmwareData.length < 0xF0000) throw new Error('Firmware seems too small. Are you sure this is the right file?');
 
     await this.espLoader.writeFlash({
-      fileArray: [{
-        data: this.espLoader.ui8ToBstr(firmwareData),
-        address: targetOffset,
-      }],
-      flashSize: 'keep',
-      flashMode: 'keep',
-      flashFreq: 'keep',
-      eraseAll: false,
-      compress: true,
-      reportProgress: (_, written, total) => {
-        if (onProgress) onProgress('Flash firmware', written, total);
-      },
+      fileArray: [{ data: this.espLoader.ui8ToBstr(firmwareData), address: targetOffset }],
+      flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
+      eraseAll: false, compress: true,
+      reportProgress: (_, written, total) => { if (onProgress) onProgress('Flash firmware', written, total); },
     });
-    this.log(`Firmware written to ${ota.backupPartition} at 0x${targetOffset.toString(16)}`);
     step(3, 'done');
 
-    // Step 4: Update OTA data to boot new partition
     step(4, 'running');
     const newOtadata = buildNewOtadata(otaRaw, ota.backupPartition, ota.nextSequence);
     await this.espLoader.writeFlash({
-      fileArray: [{
-        data: this.espLoader.ui8ToBstr(newOtadata),
-        address: 0xE000,
-      }],
-      flashSize: 'keep',
-      flashMode: 'keep',
-      flashFreq: 'keep',
-      eraseAll: false,
-      compress: true,
-      reportProgress: (_, written, total) => {
-        if (onProgress) onProgress('Update boot partition', written, total);
-      },
+      fileArray: [{ data: this.espLoader.ui8ToBstr(newOtadata), address: 0xE000 }],
+      flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
+      eraseAll: false, compress: true,
+      reportProgress: (_, written, total) => { if (onProgress) onProgress('Update boot partition', written, total); },
     });
-    this.log('OTA data updated');
     step(4, 'done');
 
-    // Step 5: Reset
     step(5, 'running');
-    await this.disconnect();
+    await this.disconnect(skipReset);
     step(5, 'done');
 
     return { partition: ota.backupPartition, success: true };
+  }
+
+  // --- Full Flash Save ---
+
+  async saveFullFlash({ onStepChange, onProgress } = {}) {
+    const steps = ['Connect to device', 'Read flash (this takes ~25 min)', 'Disconnect'];
+    const step = (idx, status) => { if (onStepChange) onStepChange(idx, steps[idx], status); };
+
+    step(0, 'running');
+    await this.connect();
+    step(0, 'done');
+
+    step(1, 'running');
+    const data = await this.espLoader.readFlash(0, 0x1000000, (_, p, t) => {
+      if (onProgress) onProgress('Read flash', p, t);
+    });
+    step(1, 'done');
+
+    step(2, 'running');
+    await this.disconnect(true);
+    step(2, 'done');
+
+    return data;
+  }
+
+  // --- Full Flash Write ---
+
+  async writeFullFlash(data, { onStepChange, onProgress } = {}) {
+    if (data.length !== 0x1000000) {
+      throw new Error(`Full flash must be exactly 16MB (0x1000000 bytes), got ${data.length}`);
+    }
+
+    const steps = ['Connect to device', 'Write flash', 'Reset device'];
+    const step = (idx, status) => { if (onStepChange) onStepChange(idx, steps[idx], status); };
+
+    step(0, 'running');
+    await this.connect();
+    step(0, 'done');
+
+    step(1, 'running');
+    await this.espLoader.writeFlash({
+      fileArray: [{ data: this.espLoader.ui8ToBstr(data), address: 0 }],
+      flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
+      eraseAll: false, compress: true,
+      reportProgress: (_, written, total) => { if (onProgress) onProgress('Write flash', written, total); },
+    });
+    step(1, 'done');
+
+    step(2, 'running');
+    await this.disconnect();
+    step(2, 'done');
   }
 }
 
@@ -303,10 +337,28 @@ export async function fetchEarlyAccessFirmware() {
   return new Uint8Array(await res.arrayBuffer());
 }
 
-export async function fetchReleaseFirmware() {
+export async function fetchReleaseFirmware(model = 'x4') {
+  // X3 uses a hardcoded firmware hosted as a static asset
+  if (model === 'x3') {
+    const res = await fetch('/firmware/x3-crosspoint.bin');
+    if (!res.ok) throw new Error(`Failed to download X3 firmware: ${res.status}`);
+    return new Uint8Array(await res.arrayBuffer());
+  }
   const res = await fetch('/api/release/firmware');
   if (!res.ok) throw new Error(`Failed to download release firmware: ${res.status}`);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+export async function fetchStockFirmware(model, lang) {
+  const res = await fetch(`/api/firmware/stock?model=${model}&lang=${lang}`);
+  if (!res.ok) throw new Error(`Failed to download stock firmware: ${res.status}`);
+  return { data: new Uint8Array(await res.arrayBuffer()), version: res.headers.get('X-Firmware-Version') || '' };
+}
+
+export async function fetchStockFirmwareInfo(model, lang) {
+  const res = await fetch(`/api/firmware/stock/info?model=${model}&lang=${lang}`);
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export async function fetchBuildMeta() {
@@ -319,4 +371,16 @@ export async function fetchReleaseMeta() {
   const res = await fetch('/api/release/latest');
   if (!res.ok) return null;
   return res.json();
+}
+
+// --- File download helper ---
+
+export function downloadBlob(data, filename) {
+  const blob = new Blob([data], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

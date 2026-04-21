@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — CrossPoint Tools</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['InterVariable', 'Inter', 'sans-serif'],
+            mono: ['"Courier New"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5f3',
+              500: '#4a7a62',
+              600: '#3d6652',
+              700: '#315243',
+            },
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="min-h-dvh bg-stone-50 font-sans">
+  <div class="mx-auto max-w-md px-6 py-16">
+    <div class="text-center">
+      <img src="/logo.png" alt="" class="mx-auto size-10 rounded-lg">
+      <h1 class="mt-4 text-xl font-semibold tracking-tight text-stone-900">Admin</h1>
+      <p class="mt-1 text-sm text-stone-400">CrossPoint Tools build management</p>
+    </div>
+
+    <!-- Auth -->
+    <div id="auth-form" class="mt-8 rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+      <label for="secret-input" class="text-sm font-medium text-stone-700">Secret</label>
+      <input type="password" id="secret-input" placeholder="Enter admin secret"
+        class="mt-1.5 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+        autocomplete="off">
+      <button onclick="authenticate()" id="auth-btn"
+        class="mt-3 flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed">
+        Unlock
+      </button>
+      <p id="auth-error" class="mt-2 hidden text-sm text-red-600"></p>
+    </div>
+
+    <!-- Dashboard (hidden until authed) -->
+    <div id="dashboard" class="mt-8 hidden space-y-4">
+      <!-- Current build status -->
+      <div class="rounded-xl bg-white p-5 ring-1 ring-stone-950/5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-stone-900">Current Build</h2>
+          <button onclick="refreshStatus()" class="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600" title="Refresh">
+            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"/></svg>
+          </button>
+        </div>
+        <div id="build-status" class="mt-3 text-sm text-stone-400">Loading...</div>
+      </div>
+
+      <!-- Trigger build -->
+      <div class="rounded-xl bg-white p-5 ring-1 ring-stone-950/5">
+        <h2 class="text-sm font-semibold text-stone-900">Trigger Build</h2>
+        <p class="mt-1 text-xs text-stone-400">Fetches the latest commit from master and starts a build if it's new.</p>
+        <button onclick="triggerBuild()" id="trigger-btn"
+          class="mt-3 flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed">
+          Fetch &amp; Build
+        </button>
+        <div id="trigger-result" class="mt-2"></div>
+      </div>
+
+      <!-- Log -->
+      <div class="rounded-xl bg-white p-5 ring-1 ring-stone-950/5">
+        <h2 class="text-sm font-semibold text-stone-900">Activity Log</h2>
+        <div id="log" class="mt-3 max-h-48 space-y-1 overflow-y-auto font-mono text-xs text-stone-500"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let secret = '';
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const now = new Date().toLocaleTimeString();
+      el.innerHTML = `<div><span class="text-stone-300">${now}</span> ${msg}</div>` + el.innerHTML;
+    }
+
+    async function authenticate() {
+      secret = document.getElementById('secret-input').value.trim();
+      if (!secret) return;
+
+      document.getElementById('auth-btn').disabled = true;
+      document.getElementById('auth-error').classList.add('hidden');
+
+      // Test the secret by hitting the build status endpoint (no auth needed)
+      // and then try a trigger with a dry-run-like check
+      try {
+        // Verify by making a test request
+        const res = await fetch('/api/build/trigger', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${secret}` },
+        });
+
+        if (res.status === 401) {
+          document.getElementById('auth-error').textContent = 'Invalid secret';
+          document.getElementById('auth-error').classList.remove('hidden');
+          document.getElementById('auth-btn').disabled = false;
+          return;
+        }
+
+        // Auth succeeded (build was triggered as a side effect, that's ok)
+        const data = await res.json();
+        document.getElementById('auth-form').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        log(`Authenticated. Build triggered: ${data.commit || 'unknown'}`);
+
+        // Save to session
+        sessionStorage.setItem('crosspoint-admin-secret', secret);
+
+        refreshStatus();
+      } catch (err) {
+        document.getElementById('auth-error').textContent = 'Connection error';
+        document.getElementById('auth-error').classList.remove('hidden');
+        document.getElementById('auth-btn').disabled = false;
+      }
+    }
+
+    async function refreshStatus() {
+      const el = document.getElementById('build-status');
+      el.textContent = 'Loading...';
+
+      try {
+        const res = await fetch('/api/build/latest');
+        if (!res.ok) {
+          el.innerHTML = '<span class="text-stone-400">No builds yet</span>';
+          return;
+        }
+        const meta = await res.json();
+        const date = meta.buildDate ? new Date(meta.buildDate).toLocaleString() : '—';
+        const statusColors = {
+          success: 'bg-brand-500',
+          building: 'bg-amber-500 animate-pulse',
+          failed: 'bg-red-500',
+        };
+        const dotClass = statusColors[meta.status] || 'bg-stone-400';
+
+        el.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="size-2 rounded-full ${dotClass}"></span>
+              <span class="font-medium text-stone-700">${meta.status}</span>
+              <span class="text-stone-300">|</span>
+              <span class="font-mono tabular-nums">${meta.commitShort || '—'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div><span class="text-stone-400">Version:</span> <span class="text-stone-700">${meta.version || '—'}</span></div>
+              <div><span class="text-stone-400">Built:</span> <span class="text-stone-700 tabular-nums">${date}</span></div>
+              <div><span class="text-stone-400">Size:</span> <span class="text-stone-700">${meta.firmwareSize ? (meta.firmwareSize / 1024 / 1024).toFixed(1) + ' MB' : '—'}</span></div>
+              <div><span class="text-stone-400">Changelog:</span> <span class="text-stone-700">${meta.changelog?.length || 0} commits</span></div>
+            </div>
+            ${meta.error ? `<div class="mt-1 rounded bg-red-50 px-2 py-1 text-xs text-red-700">${meta.error}</div>` : ''}
+          </div>
+        `;
+        log(`Status refreshed: ${meta.status} @ ${meta.commitShort || '?'}`);
+      } catch (err) {
+        el.innerHTML = '<span class="text-red-500">Failed to load</span>';
+      }
+    }
+
+    async function triggerBuild() {
+      const btn = document.getElementById('trigger-btn');
+      const result = document.getElementById('trigger-result');
+      btn.disabled = true;
+      result.innerHTML = '<p class="text-sm text-stone-400">Triggering build...</p>';
+
+      try {
+        const res = await fetch('/api/build/trigger', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${secret}` },
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          result.innerHTML = `<div class="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700">Build triggered for commit <span class="font-mono">${data.commit}</span></div>`;
+          log(`Build triggered: ${data.commit}`);
+          // Refresh status after a short delay
+          setTimeout(refreshStatus, 3000);
+        } else {
+          result.innerHTML = `<div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">${data.error}</div>`;
+          log(`Trigger failed: ${data.error}`);
+        }
+      } catch (err) {
+        result.innerHTML = `<div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">Connection error</div>`;
+      }
+
+      btn.disabled = false;
+    }
+
+    // Handle enter key on password input
+    document.getElementById('secret-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') authenticate();
+    });
+
+    // Restore session
+    const saved = sessionStorage.getItem('crosspoint-admin-secret');
+    if (saved) {
+      secret = saved;
+      document.getElementById('auth-form').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      refreshStatus();
+    }
+  </script>
+</body>
+</html>

@@ -16,6 +16,43 @@ export default {
     // Let static assets handle everything else
     return env.ASSETS.fetch(request);
   },
+
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    // Poll upstream repo for new commits and trigger build if needed
+    const apiUrl = env.REPO_URL
+      .replace('https://github.com/', 'https://api.github.com/repos/')
+      .replace('.git', '') + `/commits/${env.REPO_BRANCH}`;
+
+    const ghHeaders: Record<string, string> = {
+      'User-Agent': 'crosspoint-tools',
+      Accept: 'application/vnd.github.v3+json',
+    };
+    if (env.GITHUB_TOKEN) {
+      ghHeaders.Authorization = `token ${env.GITHUB_TOKEN}`;
+    }
+
+    const ghRes = await fetch(apiUrl, { headers: ghHeaders });
+    if (!ghRes.ok) {
+      console.error('Failed to fetch latest commit:', ghRes.status);
+      return;
+    }
+
+    const commitData = await ghRes.json() as { sha: string; commit: { message: string } };
+    const latestCommit = commitData.sha;
+
+    // Check if we already built this commit
+    const raw = await env.BUILD_META.get('latest-build');
+    if (raw) {
+      const meta: BuildMetadata = JSON.parse(raw);
+      if (meta.commit === latestCommit) {
+        // Already built this commit, skip
+        return;
+      }
+    }
+
+    console.log(`New commit detected: ${latestCommit.substring(0, 7)}, triggering build`);
+    ctx.waitUntil(triggerBuild(env, latestCommit, commitData.commit.message));
+  },
 };
 
 async function handleApi(
@@ -53,6 +90,12 @@ async function handleApi(
 
       case '/api/release/firmware':
         return handleReleaseFirmware(corsHeaders);
+
+      case '/api/firmware/stock':
+        return handleStockFirmware(url, corsHeaders);
+
+      case '/api/firmware/stock/info':
+        return handleStockFirmwareInfo(url, corsHeaders);
 
       default:
         return json({ error: 'Not found' }, 404, corsHeaders);
@@ -148,6 +191,12 @@ async function handleManualTrigger(
 ): Promise<Response> {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  // Auth check — use the webhook secret as a bearer token
+  const auth = request.headers.get('Authorization');
+  if (auth !== `Bearer ${env.GITHUB_WEBHOOK_SECRET}`) {
+    return json({ error: 'Unauthorized' }, 401, headers);
   }
 
   // Fetch latest commit from GitHub
@@ -256,6 +305,88 @@ async function handleReleaseFirmware(
       ...headers,
       'Content-Type': 'application/octet-stream',
       'Content-Disposition': 'attachment; filename="firmware.bin"',
+    },
+  });
+}
+
+// --- Stock Firmware (Official Xteink) ---
+
+const STOCK_CHECK_URLS: Record<string, Record<string, string>> = {
+  x4: {
+    ch: 'http://47.122.74.33:5000/api/check-update?current_version=V3.0.1&device_type=ESP32C3',
+    en: 'http://gotaserver.xteink.com/api/check-update?current_version=V3.0.1&device_type=ESP32C3&device_id=1234',
+  },
+  x3: {
+    ch: 'https://api-prod.xteink.cn/api/v1/check-update?current_version=V5.1.3&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=zh',
+    en: 'http://8.216.34.42:5001/api/v1/check-update?current_version=V5.1.3&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=en',
+  },
+};
+
+const STOCK_FALLBACKS: Record<string, Record<string, { version: string; download_url: string }>> = {
+  x4: {
+    en: { version: 'V3.1.1', download_url: 'http://gotaserver.xteink.com/api/download/ESP32C3/V3.1.1/V3.1.1-EN.bin' },
+    ch: { version: 'V3.1.9', download_url: 'http://47.122.74.33:5000/api/download/ESP32C3/V3.1.9/V3.1.9_CH_X4_0117.bin' },
+  },
+  x3: {
+    en: { version: 'V5.1.6', download_url: 'http://8.216.34.42:5001/api/v1/download/ESP32C3_X3/V5.1.6/V5.1.6-X3-EN-PROD-0304_.bin?choose=1&lang=en' },
+    ch: { version: 'V5.2.13', download_url: 'https://domestic-upload-file-api.oss-cn-hangzhou.aliyuncs.com/admin_uploads/firmware/202603/26/751e134f-22b1-4a00-bbfa-0942593ef867/V5.2.13-X3-CH-PROD-0326_173844.bin' },
+  },
+};
+
+async function fetchStockFirmwareInfo(model: string, lang: string) {
+  const checkUrl = STOCK_CHECK_URLS[model]?.[lang];
+  const fallback = STOCK_FALLBACKS[model]?.[lang];
+  if (!checkUrl || !fallback) return null;
+
+  try {
+    const res = await fetch(checkUrl, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      const body = await res.json() as { data?: { version: string; download_url: string } };
+      if (body.data?.download_url) return body.data;
+    }
+  } catch { /* fall through */ }
+
+  return fallback;
+}
+
+async function handleStockFirmwareInfo(
+  url: URL,
+  headers: Record<string, string>
+): Promise<Response> {
+  const model = url.searchParams.get('model') || 'x4';
+  const lang = url.searchParams.get('lang') || 'en';
+
+  const info = await fetchStockFirmwareInfo(model, lang);
+  if (!info) {
+    return json({ error: 'Invalid model or language' }, 400, headers);
+  }
+
+  return json({ version: info.version, model, lang }, 200, headers);
+}
+
+async function handleStockFirmware(
+  url: URL,
+  headers: Record<string, string>
+): Promise<Response> {
+  const model = url.searchParams.get('model') || 'x4';
+  const lang = url.searchParams.get('lang') || 'en';
+
+  const info = await fetchStockFirmwareInfo(model, lang);
+  if (!info) {
+    return json({ error: 'Invalid model or language' }, 400, headers);
+  }
+
+  const fwRes = await fetch(info.download_url);
+  if (!fwRes.ok) {
+    return json({ error: 'Failed to download stock firmware' }, 502, headers);
+  }
+
+  return new Response(fwRes.body, {
+    headers: {
+      ...headers,
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${model}-${lang}-firmware.bin"`,
+      'X-Firmware-Version': info.version,
     },
   });
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="antialiased">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,163 +7,415 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['InterVariable', 'Inter', 'sans-serif'],
+            serif: ['Lora', 'serif'],
+            mono: ['"Geist Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5f3',
+              100: '#d6e5de',
+              200: '#b3cfc2',
+              300: '#8fb9a6',
+              400: '#69917D',
+              500: '#4a7a62',
+              600: '#3d6652',
+              700: '#315243',
+              800: '#253e33',
+              900: '#1a2c24',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .animate-spin-slow { animation: spin 1.2s linear infinite; }
+    }
+  </style>
 </head>
-<body>
-  <nav>
-    <a href="/" class="logo"><img src="/logo.png" alt="" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:0.4rem;">Cross<span>Point</span> Tools</a>
-    <div class="nav-links">
-      <a href="/" class="active">Stable</a>
-      <a href="/early-access">Early Access</a>
+<body class="min-h-dvh bg-stone-50 font-sans">
+  <nav class="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
+    <div class="mx-auto flex max-w-2xl items-center justify-between px-6 py-3">
+      <a href="/" class="flex items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
+        <img src="/logo.png" alt="" class="size-7 rounded-md">
+        <span class="text-base/6 font-medium tracking-tight sm:text-sm/6">CrossPoint Tools</span>
+      </a>
+      <div class="flex gap-1">
+        <a href="/" class="rounded-md bg-stone-100 px-3 py-1.5 text-sm/5 font-medium text-stone-900 no-underline">Stable</a>
+        <a href="/early-access" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Early Access</a>
+      </div>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="hero">
-      <h1>Flash CrossPoint Firmware</h1>
-      <p>Flash the latest stable CrossPoint release to your Xteink X4 using WebSerial. No software install required.</p>
+  <main class="mx-auto max-w-2xl px-6">
+    <div class="pb-4 pt-12 sm:pt-16">
+      <h1 class="max-w-[24ch] font-serif text-4xl font-medium tracking-tight text-stone-900 text-balance sm:text-3xl">Flash Your Xteink</h1>
+      <p class="mt-3 max-w-[48ch] text-lg text-stone-500 text-pretty sm:text-base/7">Flash firmware to your Xteink e-reader using WebSerial. No software install required.</p>
     </div>
 
     <!-- Browser check -->
-    <div id="browser-warning" class="browser-warning hidden">
-      <h2>Browser Not Supported</h2>
-      <p class="text-dim">WebSerial requires Chrome or Edge on desktop. Please switch browsers to flash your device.</p>
+    <div id="browser-warning" class="hidden py-12 text-center">
+      <h2 class="font-serif text-xl font-medium text-red-800">Browser Not Supported</h2>
+      <p class="mt-2 text-base/7 text-stone-500 sm:text-sm/6">WebSerial requires Chrome or Edge on desktop. Please switch browsers.</p>
     </div>
 
-    <div id="main-content">
-      <!-- Release Info -->
-      <div class="card" id="release-card">
-        <div class="flex justify-between items-center mb-1">
-          <h2>Latest Stable Release</h2>
-          <span class="badge badge-stable">Stable</span>
+    <div id="main-content" class="space-y-4 pb-16">
+
+      <!-- Device Model Selector -->
+      <div class="rounded-xl bg-white p-5 ring-1 ring-stone-950/5">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Device Model</h2>
+        <div class="mt-3 flex gap-2">
+          <button class="model-btn flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors" data-model="x4" aria-pressed="true">Xteink X4</button>
+          <button class="model-btn flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors" data-model="x3" aria-pressed="false">Xteink X3</button>
         </div>
-        <p id="release-info">Loading release info...</p>
-        <div id="release-details" class="build-info hidden">
-          <div class="build-info-item">
-            <div class="label">Version</div>
-            <div class="value mono" id="release-version">—</div>
+      </div>
+
+      <!-- Caution Alert -->
+      <div class="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm/6 text-amber-900">
+        <span class="font-semibold">Proceed with caution.</span> Take a backup using <strong>Save full flash</strong> before flashing. Avoid disconnecting your device or closing the tab during a flash operation.
+      </div>
+
+      <!-- OTA Fast Flash -->
+      <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">OTA Fast Flash</h2>
+        <p class="mt-1 text-sm/6 text-stone-400 text-pretty">Writes firmware to the backup OTA partition and swaps boot. Your settings and books are preserved.</p>
+
+        <div class="mt-4 space-y-2">
+          <!-- CrossPoint firmware -->
+          <div class="rounded-lg bg-stone-50 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-stone-900">CrossPoint Firmware</div>
+                <div class="mt-0.5 font-mono text-xs text-stone-400 tabular-nums" id="crosspoint-version">Loading...</div>
+              </div>
+              <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-500">Community</span>
+            </div>
+            <button class="flash-btn mt-3 flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:cursor-not-allowed" data-action="crosspoint" disabled>
+              Flash CrossPoint
+            </button>
           </div>
-          <div class="build-info-item">
-            <div class="label">Released</div>
-            <div class="value" id="release-date">—</div>
+
+          <!-- Stock English -->
+          <div class="rounded-lg bg-stone-50 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-stone-900">Official English Firmware</div>
+                <div class="mt-0.5 font-mono text-xs text-stone-400 tabular-nums" id="stock-en-version">Loading...</div>
+              </div>
+              <span class="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-500">Stock</span>
+            </div>
+            <button class="flash-btn mt-3 flex w-full items-center justify-center rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-800 disabled:opacity-50 disabled:cursor-not-allowed" data-action="stock-en" disabled>
+              Flash English Firmware
+            </button>
+          </div>
+
+          <!-- Stock Chinese -->
+          <div class="rounded-lg bg-stone-50 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-stone-900">Official Chinese Firmware</div>
+                <div class="mt-0.5 font-mono text-xs text-stone-400 tabular-nums" id="stock-ch-version">Loading...</div>
+              </div>
+              <span class="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-500">Stock</span>
+            </div>
+            <button class="flash-btn mt-3 flex w-full items-center justify-center rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-800 disabled:opacity-50 disabled:cursor-not-allowed" data-action="stock-ch" disabled>
+              Flash Chinese Firmware
+            </button>
+          </div>
+
+          <!-- Custom Firmware from File -->
+          <div class="rounded-lg bg-stone-50 p-4">
+            <div class="text-sm font-semibold text-stone-900">Custom Firmware</div>
+            <p class="mt-0.5 text-xs text-stone-400">Upload a .bin file to flash to the OTA partition</p>
+            <div class="mt-3 flex gap-2">
+              <label class="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-dashed border-stone-300 bg-white px-3 py-2 text-sm text-stone-500 hover:border-stone-400 hover:text-stone-700">
+                <span id="custom-file-label">Choose file...</span>
+                <input type="file" accept=".bin" id="custom-file-input" class="hidden">
+              </label>
+              <button class="flash-btn shrink-0 rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed" data-action="custom" disabled>
+                Flash
+              </button>
+            </div>
           </div>
         </div>
-        <button class="btn btn-primary btn-lg btn-block" id="flash-stable-btn" disabled>
-          Flash CrossPoint
-        </button>
       </div>
 
-      <!-- Flash Progress -->
-      <div class="card hidden" id="progress-card">
-        <h2 id="progress-title">Flashing...</h2>
-        <ul class="steps" id="steps-list"></ul>
-        <div class="mt-2" id="progress-status"></div>
-      </div>
-
-      <!-- Info cards -->
-      <div class="card">
-        <h2>How It Works</h2>
-        <p>Connect your X4 via USB, click the flash button, and select your device. The firmware is written to the backup OTA partition, then the device reboots into the new firmware. Your settings and books are preserved.</p>
-        <div class="alert alert-info mt-1">
-          Make sure your X4 is powered on and connected via USB before flashing. Only Chrome and Edge support WebSerial.
+      <!-- Full Flash Controls -->
+      <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Full Flash Controls</h2>
+        <p class="mt-1 text-sm/6 text-stone-400 text-pretty">Back up or restore the entire 16MB flash memory. A full backup takes about 25 minutes.</p>
+        <div class="mt-4 space-y-2">
+          <button class="flash-btn flex w-full items-center justify-center rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed" data-action="save-full">
+            Save Full Flash
+          </button>
+          <div class="flex gap-2">
+            <label class="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-dashed border-stone-300 bg-white px-3 py-2 text-sm text-stone-500 hover:border-stone-400 hover:text-stone-700">
+              <span id="fullflash-file-label">Choose backup file...</span>
+              <input type="file" accept=".bin" id="fullflash-file-input" class="hidden">
+            </label>
+            <button class="flash-btn shrink-0 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed" data-action="write-full" disabled>
+              Write Full Flash
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Looking for Bleeding Edge?</h2>
-        <p>Early Access builds are compiled automatically from the latest master branch commits. They include the newest features and fixes, but may be less stable.</p>
-        <a href="/early-access" class="btn btn-early-access mt-1">View Early Access Builds</a>
+      <!-- Progress Card -->
+      <div class="hidden rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="progress-card">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6" id="progress-title">Working...</h2>
+        <ul id="steps-list" role="list" class="mt-4 divide-y divide-stone-100"></ul>
+        <div class="mt-4" id="progress-status"></div>
+      </div>
+
+      <!-- Info -->
+      <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Device Restart Instructions</h2>
+        <p class="mt-2 text-sm/6 text-stone-500 text-pretty">After flashing, press the small <strong class="text-stone-700">Reset</strong> button near the bottom right, then press and hold the power button for 3 seconds.</p>
+        <p class="mt-2 text-sm/6 text-stone-400" id="x3-restart-note" style="display:none">For CrossPoint firmware on X3, disconnect and reconnect the USB cable instead.</p>
+      </div>
+
+      <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
+        <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Looking for Bleeding Edge?</h2>
+        <p class="mt-2 text-sm/6 text-stone-500 text-pretty">Early Access builds are compiled automatically from the latest master branch commits. Newest features and fixes, but may be less stable.</p>
+        <a href="/early-access" class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-brand-600">
+          View Early Access Builds
+          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </a>
       </div>
     </div>
-  </div>
+  </main>
 
   <script type="module">
-    import { CrossPointFlasher, fetchReleaseFirmware, fetchReleaseMeta } from '/js/flasher.js';
+    import { CrossPointFlasher, fetchReleaseFirmware, fetchReleaseMeta, fetchStockFirmware, fetchStockFirmwareInfo, downloadBlob } from '/js/flasher.js';
 
-    // Browser check
+    let deviceModel = 'x4';
+    let isRunning = false;
+    let customFile = null;
+    let fullFlashFile = null;
+
+    // --- Browser check ---
     if (!('serial' in navigator)) {
       document.getElementById('browser-warning').classList.remove('hidden');
       document.getElementById('main-content').classList.add('hidden');
     }
 
-    // Load release info
-    const meta = await fetchReleaseMeta();
-    if (meta) {
-      document.getElementById('release-info').textContent = meta.name || meta.tag;
-      document.getElementById('release-version').textContent = meta.tag;
-      document.getElementById('release-date').textContent = new Date(meta.publishedAt).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric'
+    // --- Device model switcher ---
+    function updateModelButtons() {
+      document.querySelectorAll('.model-btn').forEach(btn => {
+        const m = btn.dataset.model;
+        const active = m === deviceModel;
+        btn.setAttribute('aria-pressed', active);
+        btn.className = `model-btn flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+          active
+            ? 'bg-brand-500 text-white'
+            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+        }`;
       });
-      document.getElementById('release-details').classList.remove('hidden');
-      document.getElementById('flash-stable-btn').disabled = false;
-    } else {
-      document.getElementById('release-info').textContent = 'Failed to load release info.';
+      // Show/hide X3 restart note
+      document.getElementById('x3-restart-note').style.display = deviceModel === 'x3' ? '' : 'none';
     }
+    updateModelButtons();
 
-    // Flash handler
-    const flashBtn = document.getElementById('flash-stable-btn');
-    const progressCard = document.getElementById('progress-card');
-    const stepsList = document.getElementById('steps-list');
-    const progressStatus = document.getElementById('progress-status');
+    document.querySelectorAll('.model-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isRunning) return;
+        deviceModel = btn.dataset.model;
+        updateModelButtons();
+        loadFirmwareVersions();
+      });
+    });
 
-    const STEPS = [
-      'Connect to device',
-      'Validate partition table',
-      'Read OTA data',
-      'Flash firmware',
-      'Update boot partition',
-      'Reset device',
-    ];
+    // --- Load firmware version info ---
+    async function loadFirmwareVersions() {
+      // CrossPoint community release
+      document.getElementById('crosspoint-version').textContent = 'Loading...';
+      if (deviceModel === 'x3') {
+        // X3 uses a hardcoded firmware binary
+        document.getElementById('crosspoint-version').textContent = '1.2.0+ — Apr 20, 2026';
+        document.querySelector('[data-action="crosspoint"]').disabled = false;
+      } else {
+        const meta = await fetchReleaseMeta();
+        if (meta) {
+          document.getElementById('crosspoint-version').textContent = `${meta.tag} — ${new Date(meta.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
+          document.querySelector('[data-action="crosspoint"]').disabled = false;
+        } else {
+          document.getElementById('crosspoint-version').textContent = 'Failed to load';
+        }
+      }
 
-    function renderSteps(states) {
-      stepsList.innerHTML = STEPS.map((name, i) => {
+      // Stock firmware versions
+      for (const lang of ['en', 'ch']) {
+        const el = document.getElementById(`stock-${lang}-version`);
+        el.textContent = 'Loading...';
+        const info = await fetchStockFirmwareInfo(deviceModel, lang);
+        if (info) {
+          el.textContent = info.version;
+          document.querySelector(`[data-action="stock-${lang}"]`).disabled = false;
+        } else {
+          el.textContent = 'Unavailable';
+        }
+      }
+    }
+    loadFirmwareVersions();
+
+    // --- File inputs ---
+    document.getElementById('custom-file-input').addEventListener('change', (e) => {
+      customFile = e.target.files[0] || null;
+      document.getElementById('custom-file-label').textContent = customFile ? customFile.name : 'Choose file...';
+      document.querySelector('[data-action="custom"]').disabled = !customFile;
+    });
+
+    document.getElementById('fullflash-file-input').addEventListener('change', (e) => {
+      fullFlashFile = e.target.files[0] || null;
+      document.getElementById('fullflash-file-label').textContent = fullFlashFile ? fullFlashFile.name : 'Choose backup file...';
+      document.querySelector('[data-action="write-full"]').disabled = !fullFlashFile;
+    });
+
+    // --- Progress rendering ---
+    function renderSteps(steps, states) {
+      const list = document.getElementById('steps-list');
+      list.innerHTML = steps.map((name, i) => {
         const st = states[i] || 'pending';
-        return `<li class="${st}">
-          <span class="step-icon ${st}"></span>
-          <span>${name}</span>
-          ${st === 'running' && name === 'Flash firmware' ? '<div class="progress-bar"><div class="progress-bar-fill" id="flash-progress" style="width:0%"></div></div>' : ''}
-        </li>`;
+        const colors = { pending: 'text-stone-400', running: 'text-stone-900', done: 'text-brand-500', error: 'text-red-600' };
+        const icons = { pending: '\u25CB', running: '\u25E0', done: '\u2713', error: '\u2717' };
+        const spin = st === 'running' ? 'animate-spin-slow' : '';
+        const showBar = st === 'running' && (name.includes('Flash') || name.includes('Read flash') || name.includes('Write flash'));
+        const bar = showBar ? '<div class="flex-1 h-1 rounded-full bg-stone-200 overflow-hidden"><div class="bg-brand-500 h-full rounded-full transition-all duration-200" id="flash-progress" style="width:0%"></div></div>' : '';
+        return `<li class="flex items-center gap-3 py-3 text-sm/5 ${colors[st]}"><span class="size-5 flex items-center justify-center shrink-0 ${spin}" aria-hidden="true">${icons[st]}</span><span class="${showBar ? '' : 'flex-1'}">${name}</span>${bar}</li>`;
       }).join('');
     }
 
-    flashBtn.addEventListener('click', async () => {
-      flashBtn.disabled = true;
+    function setRunning(running) {
+      isRunning = running;
+      document.querySelectorAll('.flash-btn').forEach(b => {
+        if (running) b.setAttribute('data-was-disabled', b.disabled);
+        b.disabled = running || (b.getAttribute('data-was-disabled') === 'true');
+      });
+      document.querySelectorAll('.model-btn').forEach(b => b.style.pointerEvents = running ? 'none' : '');
+    }
+
+    // --- Flash actions ---
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.flash-btn');
+      if (!btn || btn.disabled || isRunning) return;
+
+      const action = btn.dataset.action;
+      if (!action) return;
+
+      const progressCard = document.getElementById('progress-card');
+      const progressTitle = document.getElementById('progress-title');
+      const progressStatus = document.getElementById('progress-status');
+
+      setRunning(true);
       progressCard.classList.remove('hidden');
       progressStatus.innerHTML = '';
 
-      const states = STEPS.map(() => 'pending');
-      renderSteps(states);
-
-      // Download firmware first (before connecting device)
       try {
-        progressStatus.innerHTML = '<span class="text-dim">Downloading firmware...</span>';
-        const firmware = await fetchReleaseFirmware();
-        progressStatus.innerHTML = '';
+        if (action === 'save-full') {
+          progressTitle.textContent = 'Saving Full Flash...';
+          const flasher = new CrossPointFlasher(deviceModel);
+          const steps = ['Connect to device', 'Read flash (this takes ~25 min)', 'Disconnect'];
+          const states = steps.map(() => 'pending');
+          renderSteps(steps, states);
 
-        const flasher = new CrossPointFlasher();
-        await flasher.flashFirmware(firmware, {
-          onStepChange: (idx, name, status) => {
-            states[idx] = status;
-            renderSteps(states);
-          },
-          onProgress: (step, current, total) => {
-            if (step === 'Flash firmware') {
+          const data = await flasher.saveFullFlash({
+            onStepChange: (idx, name, status) => { states[idx] = status; renderSteps(steps, states); },
+            onProgress: (step, current, total) => {
               const bar = document.getElementById('flash-progress');
               if (bar) bar.style.width = `${(current / total * 100).toFixed(1)}%`;
-            }
-          },
-        });
+            },
+          });
+          downloadBlob(data, 'flash.bin');
+          progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Full flash saved! Check your downloads folder.</div>';
 
-        progressStatus.innerHTML = '<div class="alert alert-info">Flash complete! Your device will restart with the new firmware.</div>';
+        } else if (action === 'write-full') {
+          if (!fullFlashFile) throw new Error('No file selected');
+          progressTitle.textContent = 'Writing Full Flash...';
+          const data = new Uint8Array(await fullFlashFile.arrayBuffer());
+          const flasher = new CrossPointFlasher(deviceModel);
+          const steps = ['Connect to device', 'Write flash', 'Reset device'];
+          const states = steps.map(() => 'pending');
+          renderSteps(steps, states);
+
+          await flasher.writeFullFlash(data, {
+            onStepChange: (idx, name, status) => { states[idx] = status; renderSteps(steps, states); },
+            onProgress: (step, current, total) => {
+              const bar = document.getElementById('flash-progress');
+              if (bar) bar.style.width = `${(current / total * 100).toFixed(1)}%`;
+            },
+          });
+          progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Full flash written! Restart your device.</div>';
+
+        } else {
+          // OTA flash actions
+          let firmware;
+          let title;
+          const skipReset = (action === 'crosspoint' && deviceModel === 'x3');
+
+          if (action === 'crosspoint') {
+            title = 'Flashing CrossPoint Firmware...';
+            progressTitle.textContent = title;
+            progressStatus.innerHTML = '<p class="text-sm text-stone-400">Downloading firmware...</p>';
+            firmware = await fetchReleaseFirmware(deviceModel);
+          } else if (action === 'stock-en') {
+            title = 'Flashing English Firmware...';
+            progressTitle.textContent = title;
+            progressStatus.innerHTML = '<p class="text-sm text-stone-400">Downloading firmware...</p>';
+            const result = await fetchStockFirmware(deviceModel, 'en');
+            firmware = result.data;
+          } else if (action === 'stock-ch') {
+            title = 'Flashing Chinese Firmware...';
+            progressTitle.textContent = title;
+            progressStatus.innerHTML = '<p class="text-sm text-stone-400">Downloading firmware...</p>';
+            const result = await fetchStockFirmware(deviceModel, 'ch');
+            firmware = result.data;
+          } else if (action === 'custom') {
+            if (!customFile) throw new Error('No file selected');
+            title = 'Flashing Custom Firmware...';
+            progressTitle.textContent = title;
+            firmware = new Uint8Array(await customFile.arrayBuffer());
+          }
+
+          progressStatus.innerHTML = '';
+
+          const flasher = new CrossPointFlasher(deviceModel);
+          const steps = [
+            'Connect to device',
+            'Validate partition table',
+            'Read OTA data',
+            'Flash firmware',
+            'Update boot partition',
+            skipReset ? 'Disconnect' : 'Reset device',
+          ];
+          const states = steps.map(() => 'pending');
+          renderSteps(steps, states);
+
+          await flasher.flashFirmware(firmware, {
+            skipReset,
+            onStepChange: (idx, name, status) => { states[idx] = status; renderSteps(steps, states); },
+            onProgress: (step, current, total) => {
+              const bar = document.getElementById('flash-progress');
+              if (bar) bar.style.width = `${(current / total * 100).toFixed(1)}%`;
+            },
+          });
+
+          progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Flash complete! Your device will restart with the new firmware.</div>';
+        }
       } catch (err) {
-        const failIdx = states.findIndex(s => s === 'running');
-        if (failIdx >= 0) states[failIdx] = 'error';
-        renderSteps(states);
-        progressStatus.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+        progressStatus.innerHTML = `<div class="rounded-lg bg-red-50 px-4 py-3 text-sm/6 text-red-800">${err.message}</div>`;
       }
 
-      flashBtn.disabled = false;
+      setRunning(false);
     });
   </script>
 </body>
