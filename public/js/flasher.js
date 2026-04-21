@@ -338,9 +338,9 @@ export async function fetchEarlyAccessFirmware() {
 }
 
 export async function fetchReleaseFirmware(model = 'x4') {
-  // X3 uses a hardcoded firmware hosted as a static asset
+  // X3 uses the early access (nightly) build
   if (model === 'x3') {
-    const res = await fetch('/firmware/x3-crosspoint.bin');
+    const res = await fetch('/api/build/firmware');
     if (!res.ok) throw new Error(`Failed to download X3 firmware: ${res.status}`);
     return new Uint8Array(await res.arrayBuffer());
   }

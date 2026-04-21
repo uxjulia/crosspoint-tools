@@ -394,6 +394,7 @@ async function handleLatestRelease(
   const release = await res.json() as {
     tag_name: string;
     name: string;
+    html_url: string;
     published_at: string;
     body: string;
     assets: Array<{ name: string; browser_download_url: string; size: number }>;
@@ -404,6 +405,7 @@ async function handleLatestRelease(
   return json({
     tag: release.tag_name,
     name: release.name,
+    htmlUrl: release.html_url,
     publishedAt: release.published_at,
     body: release.body,
     firmwareUrl: firmwareAsset?.browser_download_url || null,
