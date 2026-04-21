@@ -42,6 +42,9 @@ async function handleApi(
       case '/api/build/latest':
         return handleLatestBuild(env, corsHeaders);
 
+      case '/api/build/summary':
+        return handleBuildSummary(url, env, corsHeaders);
+
       case '/api/build/firmware':
         return handleFirmwareDownload(env, corsHeaders);
 
@@ -95,6 +98,142 @@ async function handleLatestBuild(
   // Don't send full build log to frontend
   const { buildLog, ...publicMeta } = meta;
   return json(publicMeta, 200, headers);
+}
+
+// --- Build Summary (AI-generated) ---
+
+interface PRInfo {
+  number: number;
+  title: string;
+  body: string;
+}
+
+async function fetchPRForCommit(
+  env: Env,
+  owner: string,
+  repo: string,
+  hash: string
+): Promise<PRInfo | null> {
+  // Check KV cache first
+  const cacheKey = `pr-info:${hash}`;
+  const cached = await env.BUILD_META.get(cacheKey);
+  if (cached) return cached === 'none' ? null : JSON.parse(cached);
+
+  try {
+    const ghHeaders: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'CrossPoint-Tools',
+    };
+    if (env.GITHUB_TOKEN) {
+      ghHeaders.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
+    }
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/commits/${hash}/pulls`,
+      { headers: ghHeaders }
+    );
+    if (!res.ok) {
+      console.error(`GitHub PR fetch failed for ${hash}: ${res.status}`);
+      await env.BUILD_META.put(cacheKey, 'none');
+      return null;
+    }
+    const pulls = (await res.json()) as Array<{
+      number: number;
+      title: string;
+      body: string | null;
+    }>;
+    if (!pulls.length) {
+      await env.BUILD_META.put(cacheKey, 'none');
+      return null;
+    }
+    const pr: PRInfo = {
+      number: pulls[0].number,
+      title: pulls[0].title,
+      body: (pulls[0].body || '').slice(0, 1000),
+    };
+    await env.BUILD_META.put(cacheKey, JSON.stringify(pr));
+    return pr;
+  } catch (err) {
+    console.error(`GitHub PR fetch error for ${hash}:`, err);
+    await env.BUILD_META.put(cacheKey, 'none');
+    return null;
+  }
+}
+
+async function handleBuildSummary(
+  url: URL,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const raw = await env.BUILD_META.get('latest-build');
+  if (!raw) {
+    return json({ error: 'No builds yet' }, 404, headers);
+  }
+  const meta: BuildMetadata = JSON.parse(raw);
+  const forceRegenerate = url.searchParams.get('regenerate') === '1';
+
+  // Return cached overall summary if it exists for this build
+  if (meta.summary && !forceRegenerate) {
+    return json({ summary: meta.summary, commit: meta.commitShort }, 200, headers);
+  }
+
+  if (!meta.changelog?.length) {
+    return json({ summary: null, commit: meta.commitShort }, 200, headers);
+  }
+
+  // Step 1: Fetch PR info for each commit (cached per hash, batched to avoid rate limits)
+  const owner = 'crosspoint-reader';
+  const repo = 'crosspoint-reader';
+  const prResults: (PRInfo | null)[] = [];
+  for (const c of meta.changelog) {
+    prResults.push(await fetchPRForCommit(env, owner, repo, c.hash));
+  }
+
+  // Step 2: Build context from PRs (deduplicated) + fallback to commit messages
+  const seenPRs = new Set<number>();
+  const changeDescriptions: string[] = [];
+
+  for (let i = 0; i < meta.changelog.length; i++) {
+    const pr = prResults[i];
+    if (pr && !seenPRs.has(pr.number)) {
+      seenPRs.add(pr.number);
+      const desc = pr.body
+        ? `PR #${pr.number}: ${pr.title}\nDescription: ${pr.body}`
+        : `PR #${pr.number}: ${pr.title}`;
+      changeDescriptions.push(desc);
+    } else if (!pr) {
+      // No PR — use commit message as fallback
+      changeDescriptions.push(meta.changelog[i].message.split('\n')[0]);
+    }
+  }
+
+  const changesText = changeDescriptions.join('\n\n');
+
+  // Step 3: Generate summary from PR content
+  const response = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You write release summaries for e-reader users. Focus on high-impact features and important bug fixes. Write 2-3 short, direct sentences. State what changed — no filler, no preamble, no "this build includes." Skip minor refactors, code cleanup, and internal changes. No bullet points, no markdown.',
+      },
+      {
+        role: 'user',
+        content: `Here are the pull requests and commits in the latest nightly build of CrossPoint, an open-source firmware for Xteink e-readers:\n\n${changesText}\n\nSummarize the most important user-facing changes.`,
+      },
+    ],
+    max_tokens: 200,
+  });
+
+  const summary =
+    (response as { response?: string }).response?.trim() || null;
+
+  // Cache the overall summary on the build meta
+  if (summary) {
+    meta.summary = summary;
+    await env.BUILD_META.put('latest-build', JSON.stringify(meta));
+  }
+
+  return json({ summary, commit: meta.commitShort }, 200, headers);
 }
 
 // --- Firmware Download (from R2) ---
@@ -180,11 +319,12 @@ async function handleBuildStatus(
   const existing = await env.BUILD_META.get('latest-build');
   const meta: BuildMetadata = existing ? JSON.parse(existing) : {} as BuildMetadata;
 
-  // Merge incoming fields
+  // Merge incoming fields, clear cached summary on new builds
   Object.assign(meta, {
     ...body,
     buildDate: body.buildDate || new Date().toISOString(),
     buildTimestamp: body.buildTimestamp || Date.now(),
+    summary: undefined,
   });
 
   await env.BUILD_META.put('latest-build', JSON.stringify(meta));

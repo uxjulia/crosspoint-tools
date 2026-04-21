@@ -2,6 +2,7 @@ export interface Env {
   FIRMWARE_BUCKET: R2Bucket;
   BUILD_META: KVNamespace;
   ASSETS: Fetcher;
+  AI: Ai;
   GITHUB_WEBHOOK_SECRET: string;
   GITHUB_TOKEN?: string;
   REPO_URL: string;
@@ -19,6 +20,7 @@ export interface BuildMetadata {
   buildLog?: string;
   error?: string;
   changelog: ChangelogEntry[];
+  summary?: string;
 }
 
 export interface ChangelogEntry {

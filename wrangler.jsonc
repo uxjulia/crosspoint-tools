@@ -41,6 +41,11 @@
   //   GITHUB_WEBHOOK_SECRET - for verifying webhook payloads
   //   GITHUB_TOKEN - optional, for private repo access
 
+  // Workers AI binding
+  "ai": {
+    "binding": "AI"
+  },
+
   "vars": {
     "REPO_URL": "https://github.com/crosspoint-reader/crosspoint-reader.git"
   }
