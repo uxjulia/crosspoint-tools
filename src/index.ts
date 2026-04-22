@@ -1,4 +1,4 @@
-import type { Env, BuildMetadata } from './types';
+import type { Env, BuildMetadata, CustomBuildMetadata, FontTree, FontFile } from './types';
 
 const ROYALTY_REPO_ID = 'SoFriendly/crosspoint-tools';
 
@@ -11,9 +11,10 @@ export default {
       return handleApi(request, url, env, ctx);
     }
 
-    // Gate early access behind Royalty.dev subscription
-    if (url.pathname === '/early-access' || url.pathname === '/early-access.html') {
-      return handleEarlyAccess(request, url, env);
+    // Gate insider builds behind Royalty.dev subscription
+    if (url.pathname === '/insider' || url.pathname === '/insider.html' ||
+        url.pathname === '/early-access' || url.pathname === '/early-access.html') {
+      return handleInsiderAccess(request, url, env);
     }
 
     // Let static assets handle everything else
@@ -29,8 +30,8 @@ async function handleApi(
 ): Promise<Response> {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Build-Id, X-Build-Commit, X-Build-Version',
   };
 
   if (request.method === 'OPTIONS') {
@@ -75,7 +76,29 @@ async function handleApi(
       case '/api/auth/logout':
         return handleLogout(request);
 
+      case '/api/fonts':
+        return handleFontList(env, corsHeaders);
+
+      case '/api/custom-build/upload':
+        return handleCustomBuildUpload(request, env, corsHeaders);
+
+      case '/api/custom-build/status':
+        return handleCustomBuildStatus(request, env, corsHeaders);
+
+      case '/api/custom-build/firmware':
+        return handleCustomBuildFirmware(request, env, corsHeaders);
+
+      case '/api/custom-build/upload-result':
+        return handleCustomBuildUploadResult(request, env, corsHeaders);
+
+      case '/api/custom-build/status-update':
+        return handleCustomBuildStatusUpdate(request, env, corsHeaders);
+
       default:
+        // Dynamic routes: /api/custom-build/fonts/{buildId}/{filename}
+        if (url.pathname.startsWith('/api/custom-build/fonts/')) {
+          return handleCustomBuildFontDownload(request, url, env, corsHeaders);
+        }
         return json({ error: 'Not found' }, 404, corsHeaders);
     }
   } catch (err) {
@@ -214,7 +237,7 @@ async function handleBuildSummary(
       {
         role: 'system',
         content:
-          'You write release summaries for e-reader users. Focus on high-impact features and important bug fixes. Write 2-3 short, direct sentences. State what changed — no filler, no preamble, no "this build includes." Skip minor refactors, code cleanup, and internal changes. No bullet points, no markdown.',
+          'You write release summaries for e-reader users. Focus on high-impact features and important bug fixes. Write 2-3 short, direct sentences. State what changed. No filler, no preamble, no "this build includes." Skip minor refactors, code cleanup, and internal changes. No bullet points, no markdown.',
       },
       {
         role: 'user',
@@ -533,7 +556,7 @@ async function handleStockFirmware(
   });
 }
 
-// --- Early Access Gate ---
+// --- Insider Access Gate ---
 
 async function verifyRoyaltyKey(token: string): Promise<{ valid: boolean; email?: string }> {
   try {
@@ -546,7 +569,14 @@ async function verifyRoyaltyKey(token: string): Promise<{ valid: boolean; email?
   }
 }
 
-async function handleEarlyAccess(request: Request, url: URL, env: Env): Promise<Response> {
+async function handleInsiderAccess(request: Request, url: URL, env: Env): Promise<Response> {
+  // Redirect old /early-access URLs to /insider
+  if (url.pathname === '/early-access' || url.pathname === '/early-access.html') {
+    const newUrl = new URL('/insider', url.origin);
+    newUrl.search = url.search;
+    return Response.redirect(newUrl.toString(), 301);
+  }
+
   // Check for royalty_key in URL (new purchase or magic link callback)
   const key = url.searchParams.get('royalty_key');
   if (key) {
@@ -554,8 +584,6 @@ async function handleEarlyAccess(request: Request, url: URL, env: Env): Promise<
     if (data.valid) {
       // Set cookie and redirect to clean URL
       const cleanUrl = new URL(url.pathname, url.origin);
-      const response = Response.redirect(cleanUrl.toString(), 302);
-      // Response.redirect returns an immutable response, so we need to create a new one
       const mutableResponse = new Response(null, {
         status: 302,
         headers: { Location: cleanUrl.toString() },
@@ -574,7 +602,7 @@ async function handleEarlyAccess(request: Request, url: URL, env: Env): Promise<
   if (match) {
     const data = await verifyRoyaltyKey(match[1]);
     if (data.valid) {
-      // Verified subscriber — serve the early access page
+      // Verified subscriber - serve the insider page
       return env.ASSETS.fetch(request);
     }
     // Invalid cookie — clear it and show gate
@@ -614,7 +642,7 @@ async function handleMagicLink(
     body: JSON.stringify({
       email: body.email,
       repoId: ROYALTY_REPO_ID,
-      redirectUrl: new URL('/early-access', request.url).toString(),
+      redirectUrl: new URL('/insider', request.url).toString(),
     }),
   });
 
@@ -630,13 +658,407 @@ function handleLogout(request: Request): Response {
   const url = new URL(request.url);
   const response = new Response(null, {
     status: 302,
-    headers: { Location: new URL('/early-access', url.origin).toString() },
+    headers: { Location: new URL('/insider', url.origin).toString() },
   });
   response.headers.set(
     'Set-Cookie',
     'royalty_access=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'
   );
   return response;
+}
+
+// --- Subscriber Auth Helper ---
+
+async function getSubscriberEmail(request: Request): Promise<string | null> {
+  const cookies = request.headers.get('Cookie') || '';
+  const match = cookies.match(/royalty_access=([^;]+)/);
+  if (!match) return null;
+  const data = await verifyRoyaltyKey(match[1]);
+  return data.valid ? (data.email || null) : null;
+}
+
+// --- Font List (dynamic from upstream repo) ---
+
+const FONT_SOURCE_PATH = 'lib/EpdFont/builtinFonts/source';
+const UPSTREAM_REPO = 'crosspoint-reader/crosspoint-reader';
+const FONT_CACHE_KEY = 'font-tree';
+const FONT_CACHE_TTL = 60 * 60; // 1 hour
+
+async function fetchFontTree(env: Env): Promise<FontTree> {
+  const cached = await env.BUILD_META.get(FONT_CACHE_KEY);
+  if (cached) {
+    const tree: FontTree = JSON.parse(cached);
+    // Use cache if less than 1 hour old
+    if (Date.now() - new Date(tree.fetchedAt).getTime() < FONT_CACHE_TTL * 1000) {
+      return tree;
+    }
+  }
+
+  const ghHeaders: Record<string, string> = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'CrossPoint-Tools',
+  };
+  if (env.GITHUB_TOKEN) {
+    ghHeaders.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  }
+
+  // Fetch the git tree for the source fonts directory recursively
+  const res = await fetch(
+    `https://api.github.com/repos/${UPSTREAM_REPO}/contents/${FONT_SOURCE_PATH}`,
+    { headers: ghHeaders }
+  );
+  if (!res.ok) {
+    // Return cached even if stale, or empty
+    if (cached) return JSON.parse(cached);
+    return { families: {}, fetchedAt: new Date().toISOString() };
+  }
+
+  const dirs = await res.json() as Array<{ name: string; type: string }>;
+  const families: Record<string, FontFile[]> = {};
+
+  // Fetch each family directory
+  for (const dir of dirs) {
+    if (dir.type !== 'dir') continue;
+    const familyRes = await fetch(
+      `https://api.github.com/repos/${UPSTREAM_REPO}/contents/${FONT_SOURCE_PATH}/${dir.name}`,
+      { headers: ghHeaders }
+    );
+    if (!familyRes.ok) continue;
+    const files = await familyRes.json() as Array<{ name: string; type: string }>;
+    const fontFiles: FontFile[] = files
+      .filter(f => f.type === 'file' && /\.(ttf|otf)$/i.test(f.name))
+      .map(f => ({
+        name: f.name,
+        path: `${dir.name}/${f.name}`,
+        family: dir.name,
+      }));
+    if (fontFiles.length > 0) {
+      families[dir.name] = fontFiles;
+    }
+  }
+
+  const tree: FontTree = { families, fetchedAt: new Date().toISOString() };
+  await env.BUILD_META.put(FONT_CACHE_KEY, JSON.stringify(tree), { expirationTtl: FONT_CACHE_TTL * 2 });
+  return tree;
+}
+
+async function handleFontList(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const tree = await fetchFontTree(env);
+  return json(tree, 200, headers);
+}
+
+// --- Custom Font Build ---
+
+const CUSTOM_BUILD_LOCK_TTL = 30 * 60; // 30 minutes
+
+function generateBuildId(): string {
+  const ts = Math.floor(Date.now() / 1000);
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(3)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  return `cf-${ts}-${rand}`;
+}
+
+// Validate TTF/OTF magic bytes
+function isValidFontFile(data: ArrayBuffer): boolean {
+  if (data.byteLength < 4) return false;
+  const view = new DataView(data);
+  const magic = view.getUint32(0);
+  return (
+    magic === 0x00010000 || // TrueType
+    magic === 0x4F54544F || // OpenType (OTTO)
+    magic === 0x74727565    // TrueType (alternate)
+  );
+}
+
+async function handleCustomBuildUpload(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  const email = await getSubscriberEmail(request);
+  if (!email) {
+    return json({ error: 'Subscription required' }, 401, headers);
+  }
+
+  // Check global build lock
+  const lock = await env.BUILD_META.get('custom-build-lock');
+  if (lock) {
+    return json({ error: 'A custom build is already in progress. Please try again in a few minutes.' }, 409, headers);
+  }
+
+  // Parse multipart form data
+  const formData = await request.formData();
+  const replacements: Map<string, File> = new Map();
+
+  for (const [key, value] of formData.entries()) {
+    if (!(value instanceof File)) continue;
+    // Key is the font path, e.g. "NotoSerif/NotoSerif-Regular.ttf"
+    if (!key.includes('/') || !/\.(ttf|otf)$/i.test(key)) {
+      return json({ error: `Invalid font path: ${key}` }, 400, headers);
+    }
+    if (value.size > 5 * 1024 * 1024) {
+      return json({ error: `File too large: ${value.name} (max 5 MB)` }, 400, headers);
+    }
+    replacements.set(key, value);
+  }
+
+  if (replacements.size === 0) {
+    return json({ error: 'No font files provided' }, 400, headers);
+  }
+
+  // Validate font files
+  const buildId = generateBuildId();
+  const replacedFonts: Record<string, string> = {};
+  const validatedFiles: Map<string, ArrayBuffer> = new Map();
+
+  for (const [path, file] of replacements) {
+    const data = await file.arrayBuffer();
+    if (!isValidFontFile(data)) {
+      return json({ error: `Invalid font file: ${file.name}` }, 400, headers);
+    }
+    validatedFiles.set(path, data);
+    replacedFonts[path] = file.name;
+  }
+
+  // Auto-fill missing variants within each touched family
+  const fontTree = await fetchFontTree(env);
+  const touchedFamilies = new Map<string, Set<string>>();
+  for (const path of validatedFiles.keys()) {
+    const family = path.split('/')[0];
+    if (!touchedFamilies.has(family)) touchedFamilies.set(family, new Set());
+    touchedFamilies.get(family)!.add(path);
+  }
+
+  const autoFilled: Record<string, string> = {};  // path -> source filename
+  for (const [family, uploadedPaths] of touchedFamilies) {
+    const allVariants = fontTree.families[family];
+    if (!allVariants) continue;
+    const missingPaths = allVariants
+      .map(f => f.path)
+      .filter(p => !uploadedPaths.has(p));
+    if (missingPaths.length === 0) continue;
+
+    // Pick the best source: prefer Regular, then first uploaded
+    const regularPath = [...uploadedPaths].find(p => /regular/i.test(p));
+    const sourcePath = regularPath || [...uploadedPaths][0];
+    const sourceData = validatedFiles.get(sourcePath)!;
+    const sourceName = replacedFonts[sourcePath];
+
+    for (const missing of missingPaths) {
+      validatedFiles.set(missing, sourceData);
+      replacedFonts[missing] = `${sourceName} (auto-filled)`;
+      autoFilled[missing] = sourceName;
+    }
+  }
+
+  // Upload all font files to R2
+  for (const [path, data] of validatedFiles) {
+    await env.FIRMWARE_BUCKET.put(`builds/custom/${buildId}/fonts/${path}`, data);
+  }
+
+  // Set lock, user mapping, and build metadata
+  await env.BUILD_META.put('custom-build-lock', buildId, { expirationTtl: CUSTOM_BUILD_LOCK_TTL });
+  await env.BUILD_META.put(`custom-build:user:${email}`, buildId);
+
+  const meta: CustomBuildMetadata = {
+    buildId,
+    status: 'pending',
+    email,
+    createdAt: new Date().toISOString(),
+    replacedFonts,
+  };
+  await env.BUILD_META.put(`custom-build:${buildId}`, JSON.stringify(meta));
+
+  // Dispatch GitHub Actions workflow
+  const ghRes = await fetch(
+    'https://api.github.com/repos/SoFriendly/crosspoint-tools/actions/workflows/build-custom-firmware.yml/dispatches',
+    {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'crosspoint-tools',
+        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        ref: 'master',
+        inputs: { buildId, fonts: JSON.stringify(Object.keys(replacedFonts)) },
+      }),
+    }
+  );
+
+  if (!ghRes.ok) {
+    // Clean up on dispatch failure
+    await env.BUILD_META.delete('custom-build-lock');
+    await env.BUILD_META.delete(`custom-build:${buildId}`);
+    const body = await ghRes.text();
+    console.error(`Custom build dispatch failed: ${ghRes.status} ${body}`);
+    return json({ error: 'Failed to start build' }, 502, headers);
+  }
+
+  return json({ buildId, autoFilled }, 202, headers);
+}
+
+async function handleCustomBuildStatus(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const email = await getSubscriberEmail(request);
+  if (!email) {
+    return json({ error: 'Subscription required' }, 401, headers);
+  }
+
+  const buildId = await env.BUILD_META.get(`custom-build:user:${email}`);
+  if (!buildId) {
+    return json({ build: null }, 200, headers);
+  }
+
+  const raw = await env.BUILD_META.get(`custom-build:${buildId}`);
+  if (!raw) {
+    return json({ build: null }, 200, headers);
+  }
+
+  const meta: CustomBuildMetadata = JSON.parse(raw);
+  return json({ build: meta }, 200, headers);
+}
+
+async function handleCustomBuildFirmware(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const email = await getSubscriberEmail(request);
+  if (!email) {
+    return json({ error: 'Subscription required' }, 401, headers);
+  }
+
+  const buildId = await env.BUILD_META.get(`custom-build:user:${email}`);
+  if (!buildId) {
+    return json({ error: 'No custom build found' }, 404, headers);
+  }
+
+  const object = await env.FIRMWARE_BUCKET.get(`builds/custom/${buildId}/firmware.bin`);
+  if (!object) {
+    return json({ error: 'Firmware not available' }, 404, headers);
+  }
+
+  return new Response(object.body, {
+    headers: {
+      ...headers,
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': 'attachment; filename="crosspoint-custom.bin"',
+      'Content-Length': String(object.size),
+    },
+  });
+}
+
+// Called by GitHub Actions to download uploaded font files
+async function handleCustomBuildFontDownload(
+  request: Request,
+  url: URL,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const auth = request.headers.get('Authorization');
+  if (auth !== `Bearer ${env.GITHUB_WEBHOOK_SECRET}`) {
+    return json({ error: 'Unauthorized' }, 401, headers);
+  }
+
+  // Path: /api/custom-build/fonts/{buildId}/{family}/{filename}
+  const parts = url.pathname.replace('/api/custom-build/fonts/', '').split('/');
+  if (parts.length !== 3) {
+    return json({ error: 'Invalid path' }, 400, headers);
+  }
+  const [buildId, family, filename] = parts;
+
+  const object = await env.FIRMWARE_BUCKET.get(`builds/custom/${buildId}/fonts/${family}/${filename}`);
+  if (!object) {
+    return json({ error: 'Font not found' }, 404, headers);
+  }
+
+  return new Response(object.body, {
+    headers: {
+      ...headers,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(object.size),
+    },
+  });
+}
+
+// Called by GitHub Actions to upload the built firmware
+async function handleCustomBuildUploadResult(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  if (request.method !== 'PUT') {
+    return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  const auth = request.headers.get('Authorization');
+  if (auth !== `Bearer ${env.GITHUB_WEBHOOK_SECRET}`) {
+    return json({ error: 'Unauthorized' }, 401, headers);
+  }
+
+  const buildId = request.headers.get('X-Build-Id');
+  if (!buildId) {
+    return json({ error: 'Missing X-Build-Id header' }, 400, headers);
+  }
+
+  const firmwareData = await request.arrayBuffer();
+  await env.FIRMWARE_BUCKET.put(`builds/custom/${buildId}/firmware.bin`, firmwareData);
+
+  return json({ ok: true, size: firmwareData.byteLength }, 200, headers);
+}
+
+// Called by GitHub Actions to update build status
+async function handleCustomBuildStatusUpdate(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  const auth = request.headers.get('Authorization');
+  if (auth !== `Bearer ${env.GITHUB_WEBHOOK_SECRET}`) {
+    return json({ error: 'Unauthorized' }, 401, headers);
+  }
+
+  const body = await request.json() as {
+    buildId: string;
+    status: CustomBuildMetadata['status'];
+    firmwareSize?: number;
+    version?: string;
+    error?: string;
+  };
+
+  const raw = await env.BUILD_META.get(`custom-build:${body.buildId}`);
+  if (!raw) {
+    return json({ error: 'Build not found' }, 404, headers);
+  }
+
+  const meta: CustomBuildMetadata = JSON.parse(raw);
+  meta.status = body.status;
+  if (body.firmwareSize) meta.firmwareSize = body.firmwareSize;
+  if (body.version) meta.version = body.version;
+  if (body.error) meta.error = body.error;
+  if (body.status === 'success' || body.status === 'failed') {
+    meta.completedAt = new Date().toISOString();
+    // Release the global lock
+    await env.BUILD_META.delete('custom-build-lock');
+  }
+
+  await env.BUILD_META.put(`custom-build:${body.buildId}`, JSON.stringify(meta));
+  return json({ ok: true }, 200, headers);
 }
 
 // --- Helpers ---

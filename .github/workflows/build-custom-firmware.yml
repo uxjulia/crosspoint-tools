@@ -1,0 +1,119 @@
+name: Build Custom Font Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildId:
+        description: 'Custom build ID'
+        required: true
+      fonts:
+        description: 'JSON array of font paths to replace'
+        required: true
+
+concurrency:
+  group: custom-font-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark build as started
+        run: |
+          curl -s -X POST "https://crosspointreader.com/api/custom-build/status-update" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"buildId":"${{ inputs.buildId }}","status":"building"}'
+
+      - name: Checkout crosspoint-reader
+        uses: actions/checkout@v6
+        with:
+          repository: crosspoint-reader/crosspoint-reader
+          ref: master
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download and replace custom fonts
+        run: |
+          FONT_SOURCE_DIR="lib/EpdFont/builtinFonts/source"
+          FONTS='${{ inputs.fonts }}'
+
+          echo "Replacing fonts: $FONTS"
+
+          echo "$FONTS" | jq -r '.[]' | while read -r font_path; do
+            echo "Downloading: $font_path"
+            # font_path is like "NotoSerif/NotoSerif-Regular.ttf"
+            target="$FONT_SOURCE_DIR/$font_path"
+
+            curl -sf "https://crosspointreader.com/api/custom-build/fonts/${{ inputs.buildId }}/$font_path" \
+              -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+              -o "$target"
+
+            echo "Replaced: $target ($(stat -c%s "$target") bytes)"
+          done
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: false
+
+      - name: Install PlatformIO Core
+        run: uv pip install --system -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+
+      - name: Install font conversion dependencies
+        run: |
+          uv pip install --system freetype-py brotli
+
+      - name: Convert fonts
+        run: |
+          cd lib/EpdFont/scripts
+          bash convert-builtin-fonts.sh
+
+      - name: Build CrossPoint
+        run: pio run -e gh_release
+
+      - name: Get version
+        id: info
+        run: |
+          VERSION=$(grep -oP 'version\s*=\s*\K.*' platformio.ini | head -1)
+          echo "version=${VERSION}-custom+${{ inputs.buildId }}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload custom firmware
+        run: |
+          curl -sf -X PUT "https://crosspointreader.com/api/custom-build/upload-result" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "X-Build-Id: ${{ inputs.buildId }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @".pio/build/gh_release/firmware.bin"
+
+      - name: Update build status (success)
+        run: |
+          SIZE=$(stat -c%s ".pio/build/gh_release/firmware.bin")
+          curl -s -X POST "https://crosspointreader.com/api/custom-build/status-update" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"buildId\": \"${{ inputs.buildId }}\",
+              \"status\": \"success\",
+              \"firmwareSize\": $SIZE,
+              \"version\": \"${{ steps.info.outputs.version }}\"
+            }"
+
+      - name: Mark build failed
+        if: failure()
+        run: |
+          curl -s -X POST "https://crosspointreader.com/api/custom-build/status-update" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"buildId\": \"${{ inputs.buildId }}\",
+              \"status\": \"failed\",
+              \"error\": \"Build failed. Check GitHub Actions logs for details.\"
+            }"

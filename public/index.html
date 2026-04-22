@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CrossPoint Reader — Open-Source Firmware for Xteink E-Readers</title>
+  <title>CrossPoint Reader - Open-Source Firmware for Xteink E-Readers</title>
   <meta name="description" content="Community-built open-source firmware for Xteink X3 and X4 e-readers. EPUB support, WiFi book uploads, KOReader sync, customizable typography, and more. Flash directly from your browser.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://crosspointreader.com">
-  <meta property="og:title" content="CrossPoint Reader — Open-Source E-Ink Firmware">
+  <meta property="og:title" content="CrossPoint Reader - Open-Source E-Ink Firmware">
   <meta property="og:description" content="A better reading experience for your Xteink. EPUB support, WiFi uploads, KOReader sync, and more. Flash from your browser.">
   <meta property="og:image" content="https://crosspointreader.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="CrossPoint Reader — Open-Source E-Ink Firmware">
+  <meta name="twitter:title" content="CrossPoint Reader - Open-Source E-Ink Firmware">
   <meta name="twitter:description" content="A better reading experience for your Xteink. EPUB support, WiFi uploads, KOReader sync, and more. Flash from your browser.">
   <meta name="twitter:image" content="https://crosspointreader.com/og.png">
   <link rel="icon" type="image/png" href="/favicon.png">
@@ -61,7 +61,7 @@
         <span class="text-base/6 font-medium tracking-tight sm:text-sm/6">CrossPoint Reader</span>
       </a>
       <div class="flex items-center gap-1">
-<a href="/early-access" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Get Nightly Builds</a>
+<a href="/insider" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Insider Builds</a>
         <a href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener" class="ml-1 inline-flex items-center gap-1.5 rounded-md bg-[#B8953A] py-1.5 pr-3 pl-2 text-sm/5 font-semibold text-white no-underline hover:bg-[#9A7A2E] transition-colors">
           <img src="/crown.svg" alt="" class="size-4 brightness-0 invert">
           Fund CrossPoint
@@ -308,16 +308,16 @@
     </div>
   </section>
 
-  <!-- Early Access CTA -->
+  <!-- Insider Builds CTA -->
   <section class="border-t border-stone-200 bg-white py-16 sm:py-20">
     <div class="mx-auto max-w-3xl px-6 text-center">
-      <p class="text-sm font-semibold text-brand-500">Early access</p>
+      <p class="text-sm font-semibold text-brand-500">Insider Builds</p>
       <h2 class="mx-auto mt-2 max-w-[24ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance">Want the latest features first?</h2>
-      <p class="mx-auto mt-3 max-w-[48ch] text-base/7 text-stone-500 text-pretty">Early Access builds are compiled nightly from the latest commits. Newest features and fixes, tested internally but not yet through full release QA.</p>
+      <p class="mx-auto mt-3 max-w-[48ch] text-base/7 text-stone-500 text-pretty">Insider Builds are compiled nightly from the latest commits. Subscribers also get custom font builds. Swap in any font you want.</p>
       <div class="mt-8">
-        <a href="/early-access" class="inline-flex items-center gap-2 rounded-lg bg-brand-500 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500">
+        <a href="/insider" class="inline-flex items-center gap-2 rounded-lg bg-brand-500 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500">
           <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"/></svg>
-          View Early Access Builds
+          View Insider Builds
         </a>
       </div>
     </div>
@@ -470,7 +470,7 @@
       if (deviceModel === 'x3') {
         const buildMeta = await fetchBuildMeta();
         if (buildMeta && buildMeta.status === 'success') {
-          document.getElementById('crosspoint-version').textContent = `${buildMeta.version} — ${new Date(buildMeta.buildDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
+          document.getElementById('crosspoint-version').textContent = `${buildMeta.version} - ${new Date(buildMeta.buildDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
           document.getElementById('fw-btn-crosspoint').textContent = `CrossPoint ${buildMeta.version}`;
           document.querySelector('[data-action="crosspoint"]').disabled = false;
         } else {
@@ -479,7 +479,7 @@
       } else {
         const meta = await fetchReleaseMeta();
         if (meta) {
-          document.getElementById('crosspoint-version').textContent = `${meta.tag} — ${new Date(meta.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
+          document.getElementById('crosspoint-version').textContent = `${meta.tag} - ${new Date(meta.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`;
           document.getElementById('fw-btn-crosspoint').textContent = `CrossPoint ${meta.tag}`;
           document.querySelector('[data-action="crosspoint"]').disabled = false;
           if (meta.htmlUrl) {

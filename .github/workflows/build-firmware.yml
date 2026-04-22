@@ -36,7 +36,7 @@ jobs:
           # For workflow_dispatch, always build
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Manual trigger — building $SHORT"
+            echo "Manual trigger - building $SHORT"
             exit 0
           fi
 
@@ -153,5 +153,5 @@ jobs:
               \"status\": \"failed\",
               \"commit\": \"${{ steps.check.outputs.commit }}\",
               \"commitShort\": \"${{ steps.check.outputs.commit_short }}\",
-              \"error\": \"Build failed — check GitHub Actions logs\"
+              \"error\": \"Build failed. Check GitHub Actions logs for details.\"
             }"

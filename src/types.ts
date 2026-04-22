@@ -31,6 +31,29 @@ export interface ChangelogEntry {
   message: string;
 }
 
+export interface FontFile {
+  name: string;       // e.g. "NotoSerif-Regular.ttf"
+  path: string;       // relative path in source dir, e.g. "NotoSerif/NotoSerif-Regular.ttf"
+  family: string;     // e.g. "NotoSerif"
+}
+
+export interface FontTree {
+  families: Record<string, FontFile[]>;
+  fetchedAt: string;
+}
+
+export interface CustomBuildMetadata {
+  buildId: string;
+  status: 'pending' | 'building' | 'success' | 'failed';
+  email: string;
+  createdAt: string;
+  completedAt?: string;
+  version?: string;
+  firmwareSize?: number;
+  error?: string;
+  replacedFonts: Record<string, string>;  // path -> original filename
+}
+
 export interface GitHubPushEvent {
   ref: string;
   after: string;

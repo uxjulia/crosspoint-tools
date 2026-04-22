@@ -338,7 +338,7 @@ export async function fetchEarlyAccessFirmware() {
 }
 
 export async function fetchReleaseFirmware(model = 'x4') {
-  // X3 uses the early access (nightly) build
+  // X3 uses the nightly build
   if (model === 'x3') {
     const res = await fetch('/api/build/firmware');
     if (!res.ok) throw new Error(`Failed to download X3 firmware: ${res.status}`);
@@ -365,6 +365,43 @@ export async function fetchBuildMeta() {
   const res = await fetch('/api/build/latest');
   if (!res.ok) return null;
   return res.json();
+}
+
+// --- Custom Font Build Helpers ---
+
+export async function fetchFontList() {
+  const res = await fetch('/api/fonts');
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchCustomBuildStatus() {
+  const res = await fetch('/api/custom-build/status');
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.build;
+}
+
+export async function uploadCustomFonts(replacements) {
+  const formData = new FormData();
+  for (const [path, file] of Object.entries(replacements)) {
+    formData.append(path, file);
+  }
+  const res = await fetch('/api/custom-build/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || `Upload failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchCustomFirmware() {
+  const res = await fetch('/api/custom-build/firmware');
+  if (!res.ok) throw new Error(`Failed to download custom firmware: ${res.status}`);
+  return new Uint8Array(await res.arrayBuffer());
 }
 
 export async function fetchReleaseMeta() {
