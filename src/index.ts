@@ -88,6 +88,9 @@ async function handleApi(
       case '/api/custom-build/firmware':
         return handleCustomBuildFirmware(request, env, corsHeaders);
 
+      case '/api/custom-build/clear':
+        return handleCustomBuildClear(request, env, corsHeaders);
+
       case '/api/custom-build/upload-result':
         return handleCustomBuildUploadResult(request, env, corsHeaders);
 
@@ -957,6 +960,37 @@ async function handleCustomBuildFirmware(
       'Content-Length': String(object.size),
     },
   });
+}
+
+// Clear a user's custom build so they can start over
+async function handleCustomBuildClear(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  const email = await getSubscriberEmail(request);
+  if (!email) {
+    return json({ error: 'Subscription required' }, 401, headers);
+  }
+
+  const buildId = await env.BUILD_META.get(`custom-build:user:${email}`);
+  if (buildId) {
+    const raw = await env.BUILD_META.get(`custom-build:${buildId}`);
+    if (raw) {
+      const meta: CustomBuildMetadata = JSON.parse(raw);
+      // Only allow clearing failed or completed builds, not in-progress ones
+      if (meta.status === 'failed' || meta.status === 'success') {
+        await env.BUILD_META.delete(`custom-build:user:${email}`);
+        await env.BUILD_META.delete(`custom-build:${buildId}`);
+      }
+    }
+  }
+
+  return json({ ok: true }, 200, headers);
 }
 
 // Called by GitHub Actions to download uploaded font files

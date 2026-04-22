@@ -726,17 +726,18 @@
     });
 
     // New build / retry buttons — reload the form
+    async function clearCustomBuild() {
+      Object.keys(pendingReplacements).forEach(k => delete pendingReplacements[k]);
+      await fetch('/api/custom-build/clear', { method: 'POST' });
+      showCfState('loading');
+      initCustomFontBuild();
+    }
+
     document.getElementById('cf-new-build-btn').addEventListener('click', () => {
-      Object.keys(pendingReplacements).forEach(k => delete pendingReplacements[k]);
       document.getElementById('cf-progress-card').classList.add('hidden');
-      showCfState('loading');
-      initCustomFontBuild();
+      clearCustomBuild();
     });
-    document.getElementById('cf-retry-btn').addEventListener('click', () => {
-      Object.keys(pendingReplacements).forEach(k => delete pendingReplacements[k]);
-      showCfState('loading');
-      initCustomFontBuild();
-    });
+    document.getElementById('cf-retry-btn').addEventListener('click', clearCustomBuild);
 
     // Initialize custom font section
     initCustomFontBuild();
