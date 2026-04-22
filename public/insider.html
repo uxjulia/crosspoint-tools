@@ -49,8 +49,12 @@
   </script>
   <style type="text/tailwindcss">
     @layer utilities {
-      .animate-spin-slow { animation: spin 1.2s linear infinite; }
+      .animate-spin-slow { animation: spin-slow 1.2s linear infinite; }
       .animate-pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
+    }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
     @keyframes pulse-dot {
       0%, 100% { opacity: 1; }
