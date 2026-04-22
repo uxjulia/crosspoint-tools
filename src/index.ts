@@ -799,8 +799,15 @@ async function handleCustomBuildUpload(
   // Parse multipart form data
   const formData = await request.formData();
   const replacements: Map<string, File> = new Map();
+  const fontLabels: Record<string, string> = {};
 
   for (const [key, value] of formData.entries()) {
+    // Font labels come as "label:FamilyName" -> "Custom Name"
+    if (typeof value === 'string' && key.startsWith('label:')) {
+      const family = key.slice(6);
+      if (value.trim()) fontLabels[family] = value.trim();
+      continue;
+    }
     if (!(value instanceof File)) continue;
     // Key is the font path, e.g. "NotoSerif/NotoSerif-Regular.ttf"
     if (!key.includes('/') || !/\.(ttf|otf)$/i.test(key)) {
@@ -876,6 +883,7 @@ async function handleCustomBuildUpload(
     email,
     createdAt: new Date().toISOString(),
     replacedFonts,
+    fontLabels: Object.keys(fontLabels).length > 0 ? fontLabels : undefined,
   };
   await env.BUILD_META.put(`custom-build:${buildId}`, JSON.stringify(meta));
 
@@ -891,7 +899,11 @@ async function handleCustomBuildUpload(
       },
       body: JSON.stringify({
         ref: 'master',
-        inputs: { buildId, fonts: JSON.stringify(Object.keys(replacedFonts)) },
+        inputs: {
+          buildId,
+          fonts: JSON.stringify(Object.keys(replacedFonts)),
+          fontLabels: JSON.stringify(fontLabels),
+        },
       }),
     }
   );

@@ -52,6 +52,7 @@ export interface CustomBuildMetadata {
   firmwareSize?: number;
   error?: string;
   replacedFonts: Record<string, string>;  // path -> original filename
+  fontLabels?: Record<string, string>;    // family -> custom display label
 }
 
 export interface GitHubPushEvent {
