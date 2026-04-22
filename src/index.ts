@@ -994,10 +994,12 @@ async function handleCustomBuildClear(
     const raw = await env.BUILD_META.get(`custom-build:${buildId}`);
     if (raw) {
       const meta: CustomBuildMetadata = JSON.parse(raw);
-      // Only allow clearing failed or completed builds, not in-progress ones
-      if (meta.status === 'failed' || meta.status === 'success') {
-        await env.BUILD_META.delete(`custom-build:user:${email}`);
-        await env.BUILD_META.delete(`custom-build:${buildId}`);
+      await env.BUILD_META.delete(`custom-build:user:${email}`);
+      await env.BUILD_META.delete(`custom-build:${buildId}`);
+      // Release lock if this build holds it
+      const lock = await env.BUILD_META.get('custom-build-lock');
+      if (lock === buildId) {
+        await env.BUILD_META.delete('custom-build-lock');
       }
     }
   }
