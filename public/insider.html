@@ -578,12 +578,7 @@
             <div id="cf-sizes-${family}" class="hidden px-4 py-2.5 bg-stone-50 border-t border-stone-100">
               <div class="flex items-center gap-2">
                 <label class="text-xs font-medium text-stone-500 shrink-0">Sizes (pt)</label>
-                <div class="flex gap-1.5 flex-1">
-                  ${(fontSizeDefaults[family] || [12,14,16,18]).map((sz, i) => {
-                    const labels = ['S','M','L','XL'];
-                    return \`<div class="flex-1"><label class="text-[10px] text-stone-400">\${labels[i]}</label><input type="number" min="6" max="30" value="\${sz}" class="cf-size-input w-full rounded border border-stone-200 bg-white px-1.5 py-1 text-xs text-stone-700 text-center tabular-nums focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/20" data-family="\${escapeHtml(family)}" data-index="\${i}"></div>\`;
-                  }).join('')}
-                </div>
+                <div class="flex gap-1.5 flex-1" id="cf-sizes-inputs-${family}"></div>
               </div>
             </div>
             <div id="cf-notice-${family}" class="hidden px-4 py-2 text-xs text-amber-700 bg-amber-50/60"></div>
@@ -635,6 +630,20 @@
             }
           }
         });
+      });
+
+      // Populate size inputs per family
+      const sizeLabels = ['S', 'M', 'L', 'XL'];
+      Object.keys(families).forEach(family => {
+        const sizesContainer = document.getElementById('cf-sizes-inputs-' + family);
+        if (!sizesContainer) return;
+        const defaults = fontSizeDefaults[family] || [12, 14, 16, 18];
+        sizesContainer.innerHTML = defaults.map((sz, i) =>
+          '<div class="flex-1">' +
+            '<label class="text-[10px] text-stone-400">' + sizeLabels[i] + '</label>' +
+            '<input type="number" min="6" max="30" value="' + sz + '" class="cf-size-input w-full rounded border border-stone-200 bg-white px-1.5 py-1 text-xs text-stone-700 text-center tabular-nums focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/20" data-family="' + escapeHtml(family) + '" data-index="' + i + '">' +
+          '</div>'
+        ).join('');
       });
 
       // Attach undo listeners
