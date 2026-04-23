@@ -219,6 +219,7 @@
                   </button>
                   <a id="release-notes-link" href="#" target="_blank" rel="noopener" class="hidden text-sm font-medium text-brand-500 underline underline-offset-2 hover:text-brand-600">Release Notes</a>
                 </div>
+                <p class="mt-2 text-xs text-stone-400">If you are coming from Stock or another firmware you may need to flash twice for CrossPoint to show up.</p>
                 <!-- X3 Changelog -->
                 <div id="x3-changelog" class="mt-5 hidden border-t border-stone-200 pt-5">
                   <div class="flex items-center justify-between">
@@ -442,7 +443,8 @@
           '<button class="flash-btn mt-4 inline-flex items-center justify-center rounded-lg bg-amber-600 py-2 pr-4 pl-3 text-sm font-semibold text-white hover:bg-amber-700" data-action="beta-' + b.id + '">' +
             '<svg class="mr-1.5 size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>' +
             'Flash ' + escapeHtml(b.name) +
-          '</button>';
+          '</button>' +
+          '<p class="mt-2 text-xs text-stone-400">If you are coming from Stock or another firmware you may need to flash twice for CrossPoint to show up.</p>';
         panelContainer.insertBefore(panel, document.getElementById('fw-panel-empty'));
       });
     }
