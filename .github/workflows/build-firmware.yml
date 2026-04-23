@@ -54,12 +54,16 @@ jobs:
 
       - name: Mark build as started
         if: steps.check.outputs.skip == 'false'
+        env:
+          COMMIT: ${{ steps.check.outputs.commit }}
+          COMMIT_SHORT: ${{ steps.check.outputs.commit_short }}
+          COMMIT_MSG: ${{ steps.check.outputs.message }}
         run: |
           jq -n \
             --arg status "building" \
-            --arg commit "${{ steps.check.outputs.commit }}" \
-            --arg commitShort "${{ steps.check.outputs.commit_short }}" \
-            --arg commitMessage "${{ steps.check.outputs.message }}" \
+            --arg commit "$COMMIT" \
+            --arg commitShort "$COMMIT_SHORT" \
+            --arg commitMessage "$COMMIT_MSG" \
             '{status:$status, commit:$commit, commitShort:$commitShort, commitMessage:$commitMessage}' \
           | curl -s -X POST "https://crosspointreader.com/api/build/status" \
               -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
@@ -132,22 +136,26 @@ jobs:
 
       - name: Update build metadata (success)
         if: steps.check.outputs.skip == 'false'
+        env:
+          COMMIT: ${{ steps.check.outputs.commit }}
+          COMMIT_SHORT: ${{ steps.check.outputs.commit_short }}
+          COMMIT_MSG: ${{ steps.check.outputs.message }}
+          VERSION: ${{ steps.info.outputs.version }}
         run: |
           FIRMWARE=".pio/build/gh_release/firmware.bin"
           SIZE=$(stat -c%s "$FIRMWARE")
           CHANGELOG=$(cat /tmp/changelog.json)
 
-          # Build the JSON payload carefully
           jq -n \
             --arg status "success" \
-            --arg commit "${{ steps.check.outputs.commit }}" \
-            --arg commitShort "${{ steps.check.outputs.commit_short }}" \
-            --arg commitMessage "${{ steps.check.outputs.message }}" \
-            --arg version "${{ steps.info.outputs.version }}" \
+            --arg commit "$COMMIT" \
+            --arg commitShort "$COMMIT_SHORT" \
+            --arg commitMessage "$COMMIT_MSG" \
+            --arg version "$VERSION" \
             --argjson firmwareSize "$SIZE" \
             --argjson changelog "$CHANGELOG" \
-            '{status: $status, commit: $commit, commitShort: $commitShort, commitMessage: $commitMessage, version: $version, firmwareSize: $firmwareSize, changelog: $changelog, error: null, buildLog: null}' \
-            | curl -s -X POST "https://crosspointreader.com/api/build/status" \
+            '{status:$status, commit:$commit, commitShort:$commitShort, commitMessage:$commitMessage, version:$version, firmwareSize:$firmwareSize, changelog:$changelog, error:null, buildLog:null}' \
+          | curl -s -X POST "https://crosspointreader.com/api/build/status" \
               -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
               -H "Content-Type: application/json" \
               -d @-
@@ -209,11 +217,14 @@ jobs:
 
       - name: Mark build as failed
         if: failure() && steps.check.outputs.skip == 'false'
+        env:
+          COMMIT: ${{ steps.check.outputs.commit }}
+          COMMIT_SHORT: ${{ steps.check.outputs.commit_short }}
         run: |
           jq -n \
             --arg status "failed" \
-            --arg commit "${{ steps.check.outputs.commit }}" \
-            --arg commitShort "${{ steps.check.outputs.commit_short }}" \
+            --arg commit "$COMMIT" \
+            --arg commitShort "$COMMIT_SHORT" \
             --arg error "Build failed — check GitHub Actions logs" \
             '{status:$status, commit:$commit, commitShort:$commitShort, error:$error}' \
           | curl -s -X POST "https://crosspointreader.com/api/build/status" \

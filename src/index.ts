@@ -148,13 +148,22 @@ async function handleLatestBuild(
   headers: Record<string, string>
 ): Promise<Response> {
   const raw = await env.BUILD_META.get('latest-build');
-  if (!raw) {
+  const pendingRaw = await env.BUILD_META.get('pending-build');
+
+  if (!raw && !pendingRaw) {
     return json({ error: 'No builds yet' }, 404, headers);
   }
-  const meta: BuildMetadata = JSON.parse(raw);
-  // Don't send full build log to frontend
-  const { buildLog, ...publicMeta } = meta;
-  return json(publicMeta, 200, headers);
+
+  const latest = raw ? JSON.parse(raw) : null;
+  const pending = pendingRaw ? JSON.parse(pendingRaw) : null;
+
+  // Return the latest successful build, with pending status info if a build is in progress
+  const result = latest ? { ...latest, buildLog: undefined } : {};
+  if (pending) {
+    result.pendingBuild = pending;
+  }
+
+  return json(result, 200, headers);
 }
 
 // --- Build Summary (AI-generated) ---
@@ -373,18 +382,25 @@ async function handleBuildStatus(
   }
 
   const body = await request.json() as Partial<BuildMetadata>;
-  const existing = await env.BUILD_META.get('latest-build');
-  const meta: BuildMetadata = existing ? JSON.parse(existing) : {} as BuildMetadata;
 
-  // Merge incoming fields, clear cached summary on new builds
-  Object.assign(meta, {
-    ...body,
-    buildDate: body.buildDate || new Date().toISOString(),
-    buildTimestamp: body.buildTimestamp || Date.now(),
-    summary: undefined,
-  });
+  if (body.status === 'building' || body.status === 'failed') {
+    // Don't overwrite a successful build — write to a separate key
+    await env.BUILD_META.put('pending-build', JSON.stringify({
+      ...body,
+      buildDate: body.buildDate || new Date().toISOString(),
+      buildTimestamp: body.buildTimestamp || Date.now(),
+    }));
+  } else {
+    // Success — promote to latest-build, clear pending
+    const meta = {
+      ...body,
+      buildDate: body.buildDate || new Date().toISOString(),
+      buildTimestamp: body.buildTimestamp || Date.now(),
+    };
+    await env.BUILD_META.put('latest-build', JSON.stringify(meta));
+    await env.BUILD_META.delete('pending-build');
+  }
 
-  await env.BUILD_META.put('latest-build', JSON.stringify(meta));
   return json({ ok: true }, 200, headers);
 }
 
