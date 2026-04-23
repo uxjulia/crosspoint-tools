@@ -557,7 +557,7 @@ async function handleStockFirmwareInfo(
     return json({ error: 'Invalid model or language' }, 400, headers);
   }
 
-  return json({ version: info.version, model, lang }, 200, headers);
+  return json({ version: info.version, downloadUrl: info.download_url, model, lang }, 200, headers);
 }
 
 async function handleStockFirmware(

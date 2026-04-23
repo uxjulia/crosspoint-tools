@@ -350,9 +350,15 @@ export async function fetchReleaseFirmware(model = 'x4') {
 }
 
 export async function fetchStockFirmware(model, lang) {
-  const res = await fetch(`/api/firmware/stock?model=${model}&lang=${lang}`);
+  // Get firmware info (version + direct download URL) from our API
+  const infoRes = await fetch(`/api/firmware/stock/info?model=${model}&lang=${lang}`);
+  if (!infoRes.ok) throw new Error(`Failed to get stock firmware info: ${infoRes.status}`);
+  const info = await infoRes.json();
+
+  // Download firmware directly from Xteink's servers
+  const res = await fetch(info.downloadUrl);
   if (!res.ok) throw new Error(`Failed to download stock firmware: ${res.status}`);
-  return { data: new Uint8Array(await res.arrayBuffer()), version: res.headers.get('X-Firmware-Version') || '' };
+  return { data: new Uint8Array(await res.arrayBuffer()), version: info.version || '' };
 }
 
 export async function fetchStockFirmwareInfo(model, lang) {
