@@ -365,8 +365,7 @@
     // --- Step 1: Device model ---
     function updateDevice() {
       styleCards('.model-btn', deviceModel, 'model');
-      document.getElementById('x4-restart-note').style.display = deviceModel === 'x4' ? '' : 'none';
-      document.getElementById('restart-note-crosspoint-x3').classList.toggle('hidden', deviceModel !== 'x3');
+      document.getElementById('restart-note-crosspoint-x3')?.classList.toggle('hidden', deviceModel !== 'x3');
       document.getElementById('step-firmware').classList.toggle('hidden', !deviceModel);
       // Update step indicator
       document.getElementById('step-num-1').className = deviceModel
