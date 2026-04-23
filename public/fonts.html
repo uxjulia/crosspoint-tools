@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Font Builder - CrossPoint Reader</title>
+  <meta name="description" content="Convert TTF/OTF fonts to CrossPoint .cpfont format in your browser. No tools to install.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://crosspointreader.com/fonts">
+  <meta property="og:title" content="Font Builder - CrossPoint Reader">
+  <meta property="og:description" content="Convert TTF/OTF fonts to CrossPoint .cpfont format in your browser. No tools to install.">
+  <meta property="og:image" content="https://crosspointreader.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Font Builder - CrossPoint Reader">
+  <meta name="twitter:description" content="Convert TTF/OTF fonts to CrossPoint .cpfont format in your browser.">
+  <meta name="twitter:image" content="https://crosspointreader.com/og.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['InterVariable', 'Inter', 'sans-serif'],
+            serif: ['Lora', 'serif'],
+            mono: ['"Geist Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5f3',
+              100: '#d6e5de',
+              200: '#b3cfc2',
+              300: '#8fb9a6',
+              400: '#69917D',
+              500: '#4a7a62',
+              600: '#3d6652',
+              700: '#315243',
+              800: '#253e33',
+              900: '#1a2c24',
+            },
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="min-h-dvh bg-stone-50 font-sans">
+  <nav class="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
+    <div class="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
+      <a href="/" class="flex items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
+        <img src="/logo.png" alt="" class="size-7 rounded-md">
+        <span class="text-base/6 font-medium tracking-tight sm:text-sm/6">CrossPoint Reader</span>
+      </a>
+      <div class="flex items-center gap-1">
+        <a href="/" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Stable</a>
+        <a href="/insider" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Insider Builds</a>
+        <a href="/fonts" class="rounded-md bg-stone-100 px-3 py-1.5 text-sm/5 font-medium text-stone-900 no-underline">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="py-12 sm:py-16">
+    <div class="mx-auto max-w-3xl px-6">
+      <p class="text-sm font-semibold text-brand-500">Custom Fonts</p>
+      <h1 class="mt-2 font-serif text-3xl font-medium tracking-tight text-stone-900 sm:text-4xl text-balance">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 align-middle">Beta</span></h1>
+      <p class="mt-3 max-w-[52ch] text-base/7 text-stone-500 text-pretty">Convert TrueType or OpenType fonts to CrossPoint's <code class="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-sm text-stone-700">.cpfont</code> format directly in your browser. Includes kerning and ligature support. No tools to install.</p>
+      <div class="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm/6 text-amber-800">
+        <strong>Beta feature:</strong> Custom SD card fonts require the <a href="/#flash-tools" class="font-medium underline underline-offset-2 hover:text-amber-900">CrossPoint beta firmware</a> installed on your device.
+      </div>
+    </div>
+  </section>
+
+  <!-- Builder -->
+  <section class="pb-16">
+    <div class="mx-auto max-w-3xl px-6">
+      <div class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+
+        <!-- Family name -->
+        <div class="mb-6">
+          <label for="familyName" class="block text-sm/6 font-medium text-stone-700">Font Family Name</label>
+          <input type="text" id="familyName" placeholder="e.g. Literata" class="mt-1.5 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+          <p class="mt-1.5 text-xs text-stone-400">Letters, numbers, spaces, and dashes. Shown on the reader as one font family.</p>
+        </div>
+
+        <!-- Font file inputs -->
+        <div class="mb-4">
+          <label class="block text-sm/6 font-medium text-stone-700">Quick add from folder</label>
+          <p class="mt-1 text-xs text-stone-400">Select all font files at once. Styles are detected from filenames (e.g. FontName-Bold.ttf, FontName-BoldItalic.otf).</p>
+          <input type="file" id="fontFolder" accept=".ttf,.otf,.TTF,.OTF" webkitdirectory class="mt-1.5 block w-full text-sm text-stone-500 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100">
+          <div id="autoDetectResult" class="mt-2 hidden rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600 font-mono"></div>
+        </div>
+
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
+          <div class="relative flex justify-center"><span class="bg-white px-3 text-xs text-stone-400">or pick individually</span></div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="block text-sm/6 font-medium text-stone-700">Regular <span class="text-red-500">*</span></label>
+            <input type="file" id="fontRegular" accept=".ttf,.otf,.TTF,.OTF" class="mt-1.5 block w-full text-sm text-stone-500 file:mr-3 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-700 hover:file:bg-stone-200">
+          </div>
+          <div>
+            <label class="block text-sm/6 font-medium text-stone-700">Bold <span class="text-xs text-stone-400">(optional)</span></label>
+            <input type="file" id="fontBold" accept=".ttf,.otf,.TTF,.OTF" class="mt-1.5 block w-full text-sm text-stone-500 file:mr-3 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-700 hover:file:bg-stone-200">
+          </div>
+          <div>
+            <label class="block text-sm/6 font-medium text-stone-700">Italic <span class="text-xs text-stone-400">(optional)</span></label>
+            <input type="file" id="fontItalic" accept=".ttf,.otf,.TTF,.OTF" class="mt-1.5 block w-full text-sm text-stone-500 file:mr-3 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-700 hover:file:bg-stone-200">
+          </div>
+          <div>
+            <label class="block text-sm/6 font-medium text-stone-700">Bold Italic <span class="text-xs text-stone-400">(optional)</span></label>
+            <input type="file" id="fontBoldItalic" accept=".ttf,.otf,.TTF,.OTF" class="mt-1.5 block w-full text-sm text-stone-500 file:mr-3 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-stone-700 hover:file:bg-stone-200">
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="mt-6 flex flex-wrap items-end gap-6">
+          <div>
+            <label for="intervalPreset" class="flex items-center gap-1.5 text-sm/6 font-medium text-stone-700">
+              Unicode Coverage
+              <span class="group relative">
+                <span class="flex size-4 cursor-help items-center justify-center rounded-full bg-stone-200 text-[10px] font-bold text-stone-500">?</span>
+                <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-stone-800 px-3 py-2.5 text-xs font-normal leading-relaxed text-stone-100 shadow-lg group-hover:block">
+                  Controls which characters are included in the font files. More coverage = larger files.
+                  <br><br>
+                  <strong class="text-white">Built-in</strong> — Matches the default CrossPoint fonts. Covers English, most European languages, Cyrillic (Russian, Ukrainian, etc.), Greek, and common ligatures. Best for most users.
+                  <br><br>
+                  <strong class="text-white">Latin Extended</strong> — Broader Latin coverage including Vietnamese, African languages, and additional diacritics. Smaller than Built-in (no Cyrillic/Greek). Use if you only need Latin scripts but need wide accent support.
+                </span>
+              </span>
+            </label>
+            <select id="intervalPreset" class="mt-1.5 block rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+              <option value="builtin" selected>Built-in (Latin, Cyrillic, Greek, ligatures)</option>
+              <option value="latin-ext">Latin Extended</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Font sizes -->
+        <div class="mt-6">
+          <label class="block text-sm/6 font-medium text-stone-700">Font Sizes (pt)</label>
+          <p class="mt-1 text-xs text-stone-400">Each size maps to a reader step: Small, Medium, Large, Extra Large.</p>
+          <div class="mt-2 grid grid-cols-4 gap-3">
+            <div>
+              <label for="size0" class="block text-xs font-medium text-stone-500">Small</label>
+              <input type="number" id="size0" value="12" min="8" max="48" class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="size1" class="block text-xs font-medium text-stone-500">Medium</label>
+              <input type="number" id="size1" value="14" min="8" max="48" class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="size2" class="block text-xs font-medium text-stone-500">Large</label>
+              <input type="number" id="size2" value="16" min="8" max="48" class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="size3" class="block text-xs font-medium text-stone-500">Extra Large</label>
+              <input type="number" id="size3" value="18" min="8" max="48" class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Build button -->
+        <div class="mt-8">
+          <button id="buildBtn" onclick="startBuild()" class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085"/></svg>
+            Build .cpfont files
+          </button>
+        </div>
+
+        <!-- Progress -->
+        <div id="progressWrap" class="mt-6 hidden">
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+            <div id="progressBar" class="h-full rounded-full bg-brand-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="progressText" class="mt-2 text-center text-sm text-stone-500"></p>
+        </div>
+
+        <!-- Log -->
+        <div id="logPanel" class="mt-6 hidden max-h-64 overflow-y-auto rounded-xl bg-stone-50 p-4 font-mono text-xs leading-5 text-stone-600"></div>
+
+        <!-- Results -->
+        <div id="resultsPanel" class="mt-6 hidden">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-stone-900">Generated Files</h3>
+            <button id="downloadAllBtn" onclick="downloadAll()" class="inline-flex items-center gap-1.5 rounded-md bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-200 transition-colors">
+              <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+              Download All (.zip)
+            </button>
+          </div>
+          <ul id="fileList" class="mt-3 divide-y divide-stone-100"></ul>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="mt-8 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 class="font-serif text-lg font-medium text-stone-900">How to install</h2>
+        <ol class="mt-4 list-decimal space-y-2 pl-5 text-sm/6 text-stone-600">
+          <li>Download the generated <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">.cpfont</code> files (or the zip).</li>
+          <li>Connect to your reader's WiFi and open the web interface.</li>
+          <li>Go to the <strong>Fonts</strong> page and upload each file, or copy them to the SD card at <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/.crosspoint/fonts/YourFont/</code>. (Make sure you toggle show hidden files on your OS.)</li>
+          <li>The font will appear in your reader's font settings.</li>
+        </ol>
+        <div class="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm/6 text-amber-800">
+          <strong>Note:</strong> Glyph rasterisation uses your browser's Canvas renderer. Results may differ slightly from the official font packs which use FreeType.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+  <script src="/js/cpfont-builder.js"></script>
+  <script>
+    var builtFiles = [];
+
+    // --- Auto-detect styles from filenames ---
+    document.getElementById('fontFolder').addEventListener('change', function(e) {
+      var files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      // Filter to only font files
+      files = files.filter(function(f) { return /\.(ttf|otf)$/i.test(f.name); });
+      if (!files.length) return;
+
+      // Style suffix patterns (order matters: most specific first)
+      var STYLE_PATTERNS = [
+        { style: 'bolditalic', re: /[-_ ]?(bold[-_ ]?italic|bold[-_ ]?oblique|bolditalic|boldoblique|BdIt|bi)$/i },
+        { style: 'bold',       re: /[-_ ]?(bold|Bd)$/i },
+        { style: 'italic',     re: /[-_ ]?(italic|It|oblique)$/i },
+        { style: 'regular',    re: /[-_ ]?(regular|normal|book|roman|medium|Rg)$/i },
+      ];
+
+      function detectStyle(stem) {
+        for (var i = 0; i < STYLE_PATTERNS.length; i++) {
+          if (STYLE_PATTERNS[i].re.test(stem)) return STYLE_PATTERNS[i].style;
+        }
+        return 'regular'; // no suffix = regular
+      }
+
+      function extractFamily(stem) {
+        for (var i = 0; i < STYLE_PATTERNS.length; i++) {
+          stem = stem.replace(STYLE_PATTERNS[i].re, '');
+        }
+        return stem.replace(/[-_ ]+$/, '');
+      }
+
+      // Group files by detected family name
+      var families = {};
+      files.sort(function(a, b) { return a.name.localeCompare(b.name); });
+      for (var i = 0; i < files.length; i++) {
+        var stem = files[i].name.replace(/\.(ttf|otf)$/i, '');
+        var fam = extractFamily(stem);
+        if (!families[fam]) families[fam] = { files: [], styles: {} };
+        var style = detectStyle(stem);
+        families[fam].styles[style] = files[i];
+        families[fam].files.push(files[i]);
+      }
+
+      // Pick the family with the most style matches
+      var bestFam = '';
+      var bestCount = 0;
+      for (var fam in families) {
+        var count = Object.keys(families[fam].styles).length;
+        if (count > bestCount) { bestCount = count; bestFam = fam; }
+      }
+
+      var result = { regular: null, bold: null, italic: null, bolditalic: null };
+      var familyName = bestFam;
+      if (families[bestFam]) {
+        var styles = families[bestFam].styles;
+        result.regular = styles.regular || null;
+        result.bold = styles.bold || null;
+        result.italic = styles.italic || null;
+        result.bolditalic = styles.bolditalic || null;
+      }
+
+      // Assign to individual inputs using DataTransfer
+      function setFileInput(id, file) {
+        if (!file) return;
+        var dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById(id).files = dt.files;
+      }
+      setFileInput('fontRegular', result.regular);
+      setFileInput('fontBold', result.bold);
+      setFileInput('fontItalic', result.italic);
+      setFileInput('fontBoldItalic', result.bolditalic);
+
+      // Set family name if empty
+      var nameInput = document.getElementById('familyName');
+      if (!nameInput.value && familyName) {
+        nameInput.value = familyName.replace(/[-_]/g, ' ');
+      }
+
+      // Show detection results
+      var resultEl = document.getElementById('autoDetectResult');
+      var lines = [];
+      if (result.regular)   lines.push('Regular: ' + result.regular.name);
+      if (result.bold)       lines.push('Bold: ' + result.bold.name);
+      if (result.italic)     lines.push('Italic: ' + result.italic.name);
+      if (result.bolditalic) lines.push('Bold Italic: ' + result.bolditalic.name);
+      // Show other families found in the folder
+      var otherFamilies = Object.keys(families).filter(function(f) { return f !== bestFam; });
+      if (otherFamilies.length) {
+        lines.push('Other families found: ' + otherFamilies.join(', '));
+      }
+      resultEl.textContent = lines.join('\n');
+      resultEl.style.whiteSpace = 'pre-wrap';
+      resultEl.classList.remove('hidden');
+    });
+
+    function log(msg, level) {
+      var panel = document.getElementById('logPanel');
+      panel.classList.remove('hidden');
+      var colors = { info: 'text-stone-500', success: 'text-brand-600', error: 'text-red-600' };
+      var el = document.createElement('div');
+      el.className = colors[level] || colors.info;
+      el.textContent = msg;
+      panel.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function startBuild() {
+      var regularFile = document.getElementById('fontRegular').files[0];
+      if (!regularFile) {
+        alert('Please select a Regular font file.');
+        return;
+      }
+
+      var btn = document.getElementById('buildBtn');
+      var progressWrap = document.getElementById('progressWrap');
+      var progressBar = document.getElementById('progressBar');
+      var progressText = document.getElementById('progressText');
+      var logPanel = document.getElementById('logPanel');
+      var resultsPanel = document.getElementById('resultsPanel');
+
+      btn.disabled = true;
+      logPanel.innerHTML = '';
+      logPanel.classList.remove('hidden');
+      resultsPanel.classList.add('hidden');
+      progressWrap.classList.remove('hidden');
+      progressBar.style.width = '0%';
+      builtFiles = [];
+
+      try {
+        var customSizes = [
+          parseInt(document.getElementById('size0').value, 10) || 12,
+          parseInt(document.getElementById('size1').value, 10) || 14,
+          parseInt(document.getElementById('size2').value, 10) || 16,
+          parseInt(document.getElementById('size3').value, 10) || 18,
+        ];
+
+        var results = await CpFontBuilder.buildAllCpfonts({
+          regular: regularFile,
+          bold: document.getElementById('fontBold').files[0] || null,
+          italic: document.getElementById('fontItalic').files[0] || null,
+          boldItalic: document.getElementById('fontBoldItalic').files[0] || null,
+          familyName: document.getElementById('familyName').value,
+          intervals: document.getElementById('intervalPreset').value,
+          sizes: customSizes,
+          onLog: log,
+          onProgress: function(current, total, sizePt, styleName) {
+            var pct = Math.min(100, Math.round(current / total * 100));
+            progressBar.style.width = pct + '%';
+            progressText.textContent = 'Building ' + styleName + ' at ' + sizePt + 'pt... (' + pct + '%)';
+          },
+        });
+
+        builtFiles = results;
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Done!';
+
+        // Show results
+        var fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        var totalSize = 0;
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          totalSize += r.byteLength;
+          var li = document.createElement('li');
+          li.className = 'flex items-center justify-between py-3';
+          li.innerHTML =
+            '<div><span class="text-sm font-medium text-stone-900">' + r.filename + '</span>' +
+            '<span class="ml-2 text-xs text-stone-400">' + formatSize(r.byteLength) + '</span></div>' +
+            '<button onclick="downloadFile(' + i + ')" class="rounded-md px-2.5 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-colors">Download</button>';
+          fileList.appendChild(li);
+        }
+        resultsPanel.classList.remove('hidden');
+        log('Total: ' + results.length + ' files, ' + formatSize(totalSize), 'success');
+
+      } catch (err) {
+        log('Error: ' + err.message, 'error');
+        progressText.textContent = 'Failed';
+      }
+
+      btn.disabled = false;
+    }
+
+    function downloadFile(idx) {
+      var f = builtFiles[idx];
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(f.blob);
+      a.download = f.filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function downloadAll() {
+      if (builtFiles.length === 0) return;
+
+      // Use JSZip if available, otherwise download individually
+      if (typeof JSZip !== 'undefined') {
+        var zip = new JSZip();
+        var familyName = CpFontBuilder.sanitizeFamilyName(
+          document.getElementById('familyName').value || 'CustomFont'
+        );
+        var folder = zip.folder(familyName);
+        for (var i = 0; i < builtFiles.length; i++) {
+          folder.file(builtFiles[i].filename, builtFiles[i].blob);
+        }
+        var content = await zip.generateAsync({ type: 'blob' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = familyName + '_cpfonts.zip';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } else {
+        // Fallback: download each file
+        for (var i = 0; i < builtFiles.length; i++) {
+          downloadFile(i);
+        }
+      }
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+</body>
+</html>

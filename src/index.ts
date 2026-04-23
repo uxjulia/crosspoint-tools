@@ -11,8 +11,8 @@ export default {
       return handleApi(request, url, env, ctx);
     }
 
-    // Proxy fonts.json for SD card font loading
-    if (url.pathname === '/fonts' || url.pathname === '/fonts.json') {
+    // Proxy fonts.json for SD card font loading (device manifest)
+    if (url.pathname === '/fonts.json') {
       const res = await fetch(
         'https://github.com/adriancaruana/crosspoint-reader/releases/download/sd-fonts/fonts.json',
         { headers: { 'User-Agent': 'CrossPoint-Tools' } }
