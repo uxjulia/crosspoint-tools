@@ -152,6 +152,61 @@ jobs:
               -H "Content-Type: application/json" \
               -d @-
 
+      # --- Cache stock firmware from Xteink servers (unreachable from Cloudflare Workers) ---
+
+      - name: Cache stock firmware on R2
+        run: |
+          MODELS="x4 x3"
+          LANGS="en ch"
+
+          for model in $MODELS; do
+            for lang in $LANGS; do
+              echo "Checking stock firmware: $model/$lang"
+
+              # Get current version from check-update API
+              CHECK_URLS_x4_ch="http://47.122.74.33:5000/api/check-update?current_version=V0.0.0&device_type=ESP32C3"
+              CHECK_URLS_x4_en="http://gotaserver.xteink.com/api/check-update?current_version=V0.0.0&device_type=ESP32C3&device_id=1234"
+              CHECK_URLS_x3_ch="https://api-prod.xteink.cn/api/v1/check-update?current_version=V0.0.0&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=zh"
+              CHECK_URLS_x3_en="http://8.216.34.42:5001/api/v1/check-update?current_version=V0.0.0&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=en"
+
+              VAR_NAME="CHECK_URLS_${model}_${lang}"
+              CHECK_URL="${!VAR_NAME}"
+
+              RESPONSE=$(curl -s --max-time 10 "$CHECK_URL" || echo '{}')
+              VERSION=$(echo "$RESPONSE" | jq -r '.data.version // empty')
+              DOWNLOAD_URL=$(echo "$RESPONSE" | jq -r '.data.download_url // empty')
+
+              if [ -z "$VERSION" ] || [ -z "$DOWNLOAD_URL" ]; then
+                echo "  Skipping $model/$lang — no version info from API"
+                continue
+              fi
+
+              # Check if we already cached this version
+              CACHED=$(curl -s "https://crosspointreader.com/api/firmware/stock/info?model=$model&lang=$lang" | jq -r '.version // empty')
+              # We don't have a way to check the R2 cached version vs API version easily,
+              # so just re-cache every time (idempotent, ~6MB upload)
+
+              echo "  Downloading $model/$lang $VERSION..."
+              curl -s --max-time 60 -o "/tmp/stock-${model}-${lang}.bin" "$DOWNLOAD_URL"
+
+              if [ ! -s "/tmp/stock-${model}-${lang}.bin" ]; then
+                echo "  Download failed or empty, skipping"
+                continue
+              fi
+
+              SIZE=$(stat -c%s "/tmp/stock-${model}-${lang}.bin")
+              echo "  Uploading to R2: $model/$lang $VERSION ($SIZE bytes)"
+
+              curl -s -X PUT "https://crosspointreader.com/api/firmware/stock/cache?model=$model&lang=$lang" \
+                -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+                -H "Content-Type: application/octet-stream" \
+                -H "X-Firmware-Version: $VERSION" \
+                --data-binary @"/tmp/stock-${model}-${lang}.bin"
+
+              echo "  Done: $model/$lang $VERSION"
+            done
+          done
+
       - name: Mark build as failed
         if: failure() && steps.check.outputs.skip == 'false'
         run: |

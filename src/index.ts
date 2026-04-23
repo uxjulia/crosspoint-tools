@@ -85,6 +85,9 @@ async function handleApi(
       case '/api/firmware/stock/info':
         return handleStockFirmwareInfo(url, corsHeaders);
 
+      case '/api/firmware/stock/cache':
+        return handleStockFirmwareCache(request, url, env, corsHeaders);
+
       case '/api/auth/magic-link':
         return handleMagicLink(request, corsHeaders);
 
@@ -560,6 +563,41 @@ async function handleStockFirmwareInfo(
   return json({ version: info.version, downloadUrl: info.download_url, model, lang }, 200, headers);
 }
 
+async function handleStockFirmwareCache(
+  request: Request,
+  url: URL,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  if (request.method !== 'PUT') {
+    return json({ error: 'Method not allowed' }, 405, headers);
+  }
+
+  const auth = request.headers.get('Authorization');
+  if (auth !== `Bearer ${env.GITHUB_WEBHOOK_SECRET}`) {
+    return json({ error: 'Unauthorized' }, 401, headers);
+  }
+
+  const model = url.searchParams.get('model');
+  const lang = url.searchParams.get('lang');
+  const version = request.headers.get('X-Firmware-Version') || '';
+  if (!model || !lang) {
+    return json({ error: 'model and lang required' }, 400, headers);
+  }
+
+  const data = await request.arrayBuffer();
+  const r2Key = `stock/${model}-${lang}-${version}.bin`;
+
+  await env.FIRMWARE_BUCKET.put(r2Key, data, {
+    customMetadata: { model, lang, version, cachedAt: new Date().toISOString() },
+  });
+
+  // Update the R2 key mapping in KV so the worker knows the latest cached key
+  await env.BUILD_META.put(`stock-${model}-${lang}`, JSON.stringify({ r2Key, version }));
+
+  return json({ ok: true, r2Key, version, size: data.byteLength }, 200, headers);
+}
+
 // R2 keys for stock firmware that can't be fetched from Workers (Chinese IP servers)
 const STOCK_R2_KEYS: Record<string, string> = {
   'x4-ch': 'stock/x4-ch-V3.1.9.bin',
@@ -574,7 +612,24 @@ async function handleStockFirmware(
   const model = url.searchParams.get('model') || 'x4';
   const lang = url.searchParams.get('lang') || 'en';
 
-  // Try R2 first for firmware cached from unreachable servers
+  // Try R2 cache first (populated by nightly GitHub Actions job)
+  const cachedRaw = await env.BUILD_META.get(`stock-${model}-${lang}`);
+  if (cachedRaw) {
+    const cached = JSON.parse(cachedRaw) as { r2Key: string; version: string };
+    const object = await env.FIRMWARE_BUCKET.get(cached.r2Key);
+    if (object) {
+      return new Response(object.body, {
+        headers: {
+          ...headers,
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${model}-${lang}-firmware.bin"`,
+          'X-Firmware-Version': cached.version,
+        },
+      });
+    }
+  }
+
+  // Fallback: try hardcoded R2 keys from initial upload
   const r2Key = STOCK_R2_KEYS[`${model}-${lang}`];
   if (r2Key) {
     const object = await env.FIRMWARE_BUCKET.get(r2Key);
