@@ -80,7 +80,7 @@ async function handleApi(
         return handleReleaseFirmware(env, corsHeaders);
 
       case '/api/firmware/stock':
-        return handleStockFirmware(url, corsHeaders);
+        return handleStockFirmware(url, env, corsHeaders);
 
       case '/api/firmware/stock/info':
         return handleStockFirmwareInfo(url, corsHeaders);
@@ -560,13 +560,38 @@ async function handleStockFirmwareInfo(
   return json({ version: info.version, downloadUrl: info.download_url, model, lang }, 200, headers);
 }
 
+// R2 keys for stock firmware that can't be fetched from Workers (Chinese IP servers)
+const STOCK_R2_KEYS: Record<string, string> = {
+  'x4-ch': 'stock/x4-ch-V3.1.9.bin',
+  'x3-en': 'stock/x3-en-V5.1.6.bin',
+};
+
 async function handleStockFirmware(
   url: URL,
+  env: Env,
   headers: Record<string, string>
 ): Promise<Response> {
   const model = url.searchParams.get('model') || 'x4';
   const lang = url.searchParams.get('lang') || 'en';
 
+  // Try R2 first for firmware cached from unreachable servers
+  const r2Key = STOCK_R2_KEYS[`${model}-${lang}`];
+  if (r2Key) {
+    const object = await env.FIRMWARE_BUCKET.get(r2Key);
+    if (object) {
+      const fallbackVersion = STOCK_FALLBACKS[model]?.[lang]?.version || '';
+      return new Response(object.body, {
+        headers: {
+          ...headers,
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${model}-${lang}-firmware.bin"`,
+          'X-Firmware-Version': fallbackVersion,
+        },
+      });
+    }
+  }
+
+  // For firmware not in R2, fetch version info then download directly
   const info = await fetchStockFirmwareInfo(model, lang);
   if (!info) {
     return json({ error: 'Invalid model or language' }, 400, headers);
