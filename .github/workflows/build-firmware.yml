@@ -55,15 +55,16 @@ jobs:
       - name: Mark build as started
         if: steps.check.outputs.skip == 'false'
         run: |
-          curl -s -X POST "https://crosspointreader.com/api/build/status" \
-            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"status\": \"building\",
-              \"commit\": \"${{ steps.check.outputs.commit }}\",
-              \"commitShort\": \"${{ steps.check.outputs.commit_short }}\",
-              \"commitMessage\": \"${{ steps.check.outputs.message }}\"
-            }"
+          jq -n \
+            --arg status "building" \
+            --arg commit "${{ steps.check.outputs.commit }}" \
+            --arg commitShort "${{ steps.check.outputs.commit_short }}" \
+            --arg commitMessage "${{ steps.check.outputs.message }}" \
+            '{status:$status, commit:$commit, commitShort:$commitShort, commitMessage:$commitMessage}' \
+          | curl -s -X POST "https://crosspointreader.com/api/build/status" \
+              -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+              -H "Content-Type: application/json" \
+              -d @-
 
       - name: Checkout crosspoint-reader
         if: steps.check.outputs.skip == 'false'
@@ -154,12 +155,13 @@ jobs:
       - name: Mark build as failed
         if: failure() && steps.check.outputs.skip == 'false'
         run: |
-          curl -s -X POST "https://crosspointreader.com/api/build/status" \
-            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"status\": \"failed\",
-              \"commit\": \"${{ steps.check.outputs.commit }}\",
-              \"commitShort\": \"${{ steps.check.outputs.commit_short }}\",
-              \"error\": \"Build failed. Check GitHub Actions logs for details.\"
-            }"
+          jq -n \
+            --arg status "failed" \
+            --arg commit "${{ steps.check.outputs.commit }}" \
+            --arg commitShort "${{ steps.check.outputs.commit_short }}" \
+            --arg error "Build failed — check GitHub Actions logs" \
+            '{status:$status, commit:$commit, commitShort:$commitShort, error:$error}' \
+          | curl -s -X POST "https://crosspointreader.com/api/build/status" \
+              -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+              -H "Content-Type: application/json" \
+              -d @-
