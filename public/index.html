@@ -999,8 +999,14 @@
         <!-- Restart Instructions -->
         <div class="hidden rounded-xl bg-stone-50 p-5" id="restart-card">
           <div class="text-sm font-semibold text-stone-700">After flashing</div>
-          <p class="mt-1 text-sm/6 text-stone-500">Press the <strong class="text-stone-600">Reset</strong> button, then press and hold the power button for 3 seconds.</p>
-          <p class="mt-1 text-sm/6 text-stone-400 hidden" id="restart-note-crosspoint-x3"><strong class="text-stone-500">X3 tip:</strong> If your device is already running CrossPoint, you can disconnect and reconnect the USB cable instead.</p>
+          <!-- Default: hard reset happened on the serial side, user just needs to finish the power cycle -->
+          <div id="restart-note-default">
+            <p class="mt-1 text-sm/6 text-stone-500">Press the <strong class="text-stone-600">Reset</strong> button, then press and hold the power button for 3 seconds.</p>
+          </div>
+          <!-- X3 + CrossPoint/beta/custom: no serial reset, device must be power-cycled by unplugging USB -->
+          <div id="restart-note-x3-unplug" class="hidden">
+            <p class="mt-1 text-sm/6 text-stone-500">Unplug and reconnect the USB cable. Don't press the Reset button.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1063,7 +1069,6 @@
     // --- Step 1: Device model ---
     function updateDevice() {
       styleCards('.model-btn', deviceModel, 'model');
-      document.getElementById('restart-note-crosspoint-x3')?.classList.toggle('hidden', deviceModel !== 'x3');
       document.getElementById('step-firmware').classList.toggle('hidden', !deviceModel);
       // Update step indicator
       document.getElementById('step-num-1').className = deviceModel
@@ -1288,9 +1293,16 @@
       const progressTitle = document.getElementById('progress-title');
       const progressStatus = document.getElementById('progress-status');
 
+      // X3 bootloader validates the new app on first boot before committing the OTA pointer.
+      // A hard_reset interrupts that validation and rolls back, causing the "flash twice" bug.
+      // Skip reset for CrossPoint/beta/custom on X3 so the user's manual replug runs the validation cleanly.
+      const skipReset = deviceModel === 'x3' && (action === 'crosspoint' || action === 'custom' || action.startsWith('beta-'));
+
       setRunning(true);
       progressCard.classList.remove('hidden');
       document.getElementById('restart-card').classList.remove('hidden');
+      document.getElementById('restart-note-default').classList.toggle('hidden', skipReset);
+      document.getElementById('restart-note-x3-unplug').classList.toggle('hidden', !skipReset);
       progressStatus.innerHTML = '';
       progressCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -1333,10 +1345,6 @@
         } else {
           let firmware;
           let title;
-          // X3 bootloader validates the new app on first boot before committing the OTA pointer.
-          // A hard_reset interrupts that validation and rolls back, causing the "flash twice" bug.
-          // Skip reset for CrossPoint on X3 so the user's manual replug runs the validation cleanly.
-          const skipReset = (action === 'crosspoint' || action.startsWith('beta-')) && deviceModel === 'x3';
 
           if (action === 'crosspoint') {
             title = 'Flashing CrossPoint Firmware...';
