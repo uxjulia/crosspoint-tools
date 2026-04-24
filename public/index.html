@@ -990,7 +990,7 @@
         </div>
 
         <!-- Progress Card -->
-        <div class="hidden rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="progress-card">
+        <div class="hidden scroll-mt-20 rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="progress-card">
           <h3 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6" id="progress-title">Working...</h3>
           <ul id="steps-list" role="list" class="mt-4 divide-y divide-stone-100"></ul>
           <div class="mt-4" id="progress-status"></div>
@@ -1292,6 +1292,7 @@
       progressCard.classList.remove('hidden');
       document.getElementById('restart-card').classList.remove('hidden');
       progressStatus.innerHTML = '';
+      progressCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       try {
         if (action === 'save-full') {
