@@ -1333,8 +1333,10 @@
         } else {
           let firmware;
           let title;
-          // Always do a hard reset — USB disconnect only works if already on CrossPoint
-          const skipReset = false;
+          // X3 bootloader validates the new app on first boot before committing the OTA pointer.
+          // A hard_reset interrupts that validation and rolls back, causing the "flash twice" bug.
+          // Skip reset for CrossPoint on X3 so the user's manual replug runs the validation cleanly.
+          const skipReset = action === 'crosspoint' && deviceModel === 'x3';
 
           if (action === 'crosspoint') {
             title = 'Flashing CrossPoint Firmware...';
@@ -1389,7 +1391,9 @@
             },
           });
 
-          progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Flash complete! Your device will restart with the new firmware.</div>';
+          progressStatus.innerHTML = skipReset
+            ? '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Flash complete! Unplug and replug the USB cable to restart your device.</div>'
+            : '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-700">Flash complete! Your device will restart with the new firmware.</div>';
         }
       } catch (err) {
         progressStatus.innerHTML = `<div class="rounded-lg bg-red-50 px-4 py-3 text-sm/6 text-red-800">${err.message}</div>`;
