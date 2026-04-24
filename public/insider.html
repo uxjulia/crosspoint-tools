@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CrossPoint Insider Builds</title>
-  <meta name="description" content="Nightly builds and custom font firmware for CrossPoint Reader.">
+  <meta name="description" content="Nightly firmware builds for CrossPoint Reader.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://crosspointreader.com/insider">
   <meta property="og:title" content="CrossPoint Insider Builds">
-  <meta property="og:description" content="Nightly builds and custom font firmware for CrossPoint Reader.">
+  <meta property="og:description" content="Nightly firmware builds for CrossPoint Reader.">
   <meta property="og:image" content="https://crosspointreader.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CrossPoint Insider Builds">
-  <meta name="twitter:description" content="Nightly builds and custom font firmware for CrossPoint Reader.">
+  <meta name="twitter:description" content="Nightly firmware builds for CrossPoint Reader.">
   <meta name="twitter:image" content="https://crosspointreader.com/og.png">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,8 +76,8 @@
   <main class="mx-auto max-w-2xl px-6">
     <div class="pb-2 pt-12 sm:pt-16">
       <p class="text-sm font-medium text-brand-500">Insider Builds</p>
-      <h1 class="mt-1 max-w-[24ch] font-serif text-4xl font-medium tracking-tight text-stone-900 text-balance sm:text-3xl">Nightly & Custom Builds</h1>
-      <p class="mt-3 max-w-[48ch] text-lg text-stone-500 text-pretty sm:text-base/7">Latest nightly firmware and custom font builds</p>
+      <h1 class="mt-1 max-w-[24ch] font-serif text-4xl font-medium tracking-tight text-stone-900 text-balance sm:text-3xl">Nightly Builds</h1>
+      <p class="mt-3 max-w-[48ch] text-lg text-stone-500 text-pretty sm:text-base/7">Latest nightly firmware compiled from master</p>
     </div>
 
     <div class="my-6 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm/6 text-amber-900">
@@ -91,6 +91,21 @@
     </div>
 
     <div id="main-content">
+      <!-- Device Selector -->
+      <div class="mb-4 rounded-xl bg-white p-5 ring-1 ring-stone-950/5" id="device-selector">
+        <h3 class="text-sm font-semibold text-stone-900">Select your device</h3>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <button class="insider-model-btn group relative rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300" data-model="x4">
+            <div class="text-sm font-semibold text-stone-900">Xteink X4</div>
+            <div class="mt-0.5 text-xs text-stone-400">480 &times; 800</div>
+          </button>
+          <button class="insider-model-btn group relative rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300" data-model="x3">
+            <div class="text-sm font-semibold text-stone-900">Xteink X3</div>
+            <div class="mt-0.5 text-xs text-stone-400">528 &times; 792</div>
+          </button>
+        </div>
+      </div>
+
       <!-- Loading -->
       <div id="loading" class="py-16 text-center">
         <svg class="mx-auto size-5 animate-spin text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -144,7 +159,7 @@
             <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:cursor-not-allowed" id="flash-ea-btn" disabled>
               Flash Nightly Build
             </button>
-            <p class="mt-2 text-xs text-stone-400">If you are coming from Stock or another firmware you may need to flash twice for CrossPoint to show up.</p>
+            <p class="mt-2 text-xs text-stone-400">Make sure you've selected the correct device model above before flashing.</p>
             <a href="#changelog" class="mt-2 inline-block text-sm font-medium text-brand-500 hover:text-brand-600">View Changelog</a>
           </div>
           <div id="building-section" class="mt-5 hidden">
@@ -165,12 +180,12 @@
         <!-- Restart Instructions -->
         <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5">
           <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Device Restart Instructions</h2>
-          <p class="mt-2 text-sm/6 text-stone-500 text-pretty">After flashing, press the small <strong class="text-stone-700">Reset</strong> button near the bottom right, then press and hold the power button for 3 seconds.</p>
-          <p class="mt-1 text-sm/6 text-stone-400 text-pretty"><strong class="text-stone-500">X3 tip:</strong> If your device is already running CrossPoint, you can disconnect and reconnect the USB cable instead.</p>
+          <p class="mt-2 text-sm/6 text-stone-500 text-pretty"><strong class="text-stone-600">X4:</strong> Press the small Reset button near the bottom right, then hold the power button for 3 seconds.</p>
+          <p class="mt-1 text-sm/6 text-stone-500 text-pretty"><strong class="text-stone-600">X3:</strong> Unplug and reconnect the USB cable. Don't press the Reset button.</p>
         </div>
 
-        <!-- Custom Font Build -->
-        <div class="rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="custom-font-section">
+        <!-- Custom Font Build (hidden for now) -->
+        <div class="hidden rounded-xl bg-white p-6 ring-1 ring-stone-950/5" id="custom-font-section">
           <div class="flex items-center justify-between">
             <h2 class="font-serif text-lg font-medium text-stone-900 sm:text-base/6">Custom Font Build</h2>
             <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600">Beta</span>
@@ -304,6 +319,21 @@
       return div.innerHTML;
     }
 
+    // --- Device model selection ---
+    let deviceModel = null;
+
+    document.querySelectorAll('.insider-model-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deviceModel = btn.dataset.model;
+        document.querySelectorAll('.insider-model-btn').forEach(b => {
+          const active = b.dataset.model === deviceModel;
+          b.className = active
+            ? 'insider-model-btn group relative rounded-xl border-2 border-brand-500 bg-brand-50/40 p-4 text-left'
+            : 'insider-model-btn group relative rounded-xl border border-stone-200 p-4 text-left hover:border-stone-300';
+        });
+      });
+    });
+
     window.loadBuildInfo = async function loadBuildInfo() {
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('no-builds').classList.add('hidden');
@@ -405,18 +435,20 @@
     loadSummary();
 
     // --- Flash Logic ---
-    const STEPS = [
-      'Connect to device',
-      'Validate partition table',
-      'Read OTA data',
-      'Flash firmware',
-      'Update boot partition',
-      'Reset device',
-    ];
+    function getSteps(skipReset) {
+      return [
+        'Connect to device',
+        'Validate partition table',
+        'Read OTA data',
+        'Flash firmware',
+        'Update boot partition',
+        skipReset ? 'Disconnect' : 'Reset device',
+      ];
+    }
 
-    function renderSteps(states) {
+    function renderSteps(steps, states) {
       const list = document.getElementById('steps-list');
-      list.innerHTML = STEPS.map((name, i) => {
+      list.innerHTML = steps.map((name, i) => {
         const st = states[i] || 'pending';
         const colors = { pending: 'text-stone-400', running: 'text-stone-900', done: 'text-brand-500', error: 'text-red-600' };
         const icons = { pending: '\u25CB', running: '\u25E0', done: '\u2713', error: '\u2717' };
@@ -429,28 +461,33 @@
     }
 
     document.getElementById('flash-ea-btn').addEventListener('click', async () => {
+      if (!deviceModel) { alert('Please select your device model first.'); return; }
+
       const flashBtn = document.getElementById('flash-ea-btn');
       const progressCard = document.getElementById('progress-card');
       const progressStatus = document.getElementById('progress-status');
+      const skipReset = deviceModel === 'x3';
+      const steps = getSteps(skipReset);
 
       flashBtn.disabled = true;
       progressCard.classList.remove('hidden');
       progressStatus.innerHTML = '';
       progressCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      const states = STEPS.map(() => 'pending');
-      renderSteps(states);
+      const states = steps.map(() => 'pending');
+      renderSteps(steps, states);
 
       try {
         progressStatus.innerHTML = '<p class="text-sm text-stone-400">Downloading nightly firmware...</p>';
         const firmware = await fetchEarlyAccessFirmware();
         progressStatus.innerHTML = '';
 
-        const flasher = new CrossPointFlasher('x4');
+        const flasher = new CrossPointFlasher(deviceModel);
         await flasher.flashFirmware(firmware, {
+          skipReset,
           onStepChange: (idx, name, status) => {
             states[idx] = status;
-            renderSteps(states);
+            renderSteps(steps, states);
           },
           onProgress: (step, current, total) => {
             if (step === 'Flash firmware') {
@@ -460,7 +497,9 @@
           },
         });
 
-        progressStatus.innerHTML = '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-brand-500"><strong class="text-brand-600">X4:</strong> Press the small Reset button near the bottom right, then hold the power button for 3 seconds.</p><p class="mt-1 text-brand-500"><strong class="text-brand-600">X3:</strong> Disconnect and reconnect the USB cable.</p></div>';
+        progressStatus.innerHTML = skipReset
+          ? '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-brand-500">Unplug and reconnect the USB cable. Don\'t press the Reset button.</p></div>'
+          : '<div class="rounded-lg bg-brand-50 px-4 py-3 text-sm/6 text-brand-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-brand-500">Press the small Reset button near the bottom right, then hold the power button for 3 seconds.</p></div>';
       } catch (err) {
         const failIdx = states.findIndex(s => s === 'running');
         if (failIdx >= 0) states[failIdx] = 'error';
@@ -749,19 +788,23 @@
 
     // Flash custom build
     document.getElementById('cf-flash-btn').addEventListener('click', async () => {
+      if (!deviceModel) { alert('Please select your device model first.'); return; }
+
       const flashBtn = document.getElementById('cf-flash-btn');
       const progressCard = document.getElementById('cf-progress-card');
       const progressStatus = document.getElementById('cf-progress-status');
+      const cfSkipReset = deviceModel === 'x3';
+      const cfSteps = getSteps(cfSkipReset);
 
       flashBtn.disabled = true;
       progressCard.classList.remove('hidden');
       progressStatus.innerHTML = '';
       progressCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      const states = STEPS.map(() => 'pending');
+      const states = cfSteps.map(() => 'pending');
       const renderCfSteps = (st) => {
         const list = document.getElementById('cf-steps-list');
-        list.innerHTML = STEPS.map((name, i) => {
+        list.innerHTML = cfSteps.map((name, i) => {
           const s = st[i] || 'pending';
           const colors = { pending: 'text-stone-400', running: 'text-stone-900', done: 'text-indigo-500', error: 'text-red-600' };
           const icons = { pending: '\u25CB', running: '\u25E0', done: '\u2713', error: '\u2717' };
@@ -779,8 +822,9 @@
         const firmware = await fetchCustomFirmware();
         progressStatus.innerHTML = '';
 
-        const flasher = new CrossPointFlasher('x4');
+        const flasher = new CrossPointFlasher(deviceModel);
         await flasher.flashFirmware(firmware, {
+          skipReset: cfSkipReset,
           onStepChange: (idx, name, status) => { states[idx] = status; renderCfSteps(states); },
           onProgress: (step, current, total) => {
             if (step === 'Flash firmware') {
@@ -789,7 +833,9 @@
             }
           },
         });
-        progressStatus.innerHTML = '<div class="rounded-lg bg-indigo-50 px-4 py-3 text-sm/6 text-indigo-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-indigo-500"><strong class="text-indigo-600">X4:</strong> Press the small Reset button near the bottom right, then hold the power button for 3 seconds.</p><p class="mt-1 text-indigo-500"><strong class="text-indigo-600">X3:</strong> Disconnect and reconnect the USB cable.</p></div>';
+        progressStatus.innerHTML = cfSkipReset
+          ? '<div class="rounded-lg bg-indigo-50 px-4 py-3 text-sm/6 text-indigo-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-indigo-500">Unplug and reconnect the USB cable. Don\'t press the Reset button.</p></div>'
+          : '<div class="rounded-lg bg-indigo-50 px-4 py-3 text-sm/6 text-indigo-600"><p class="font-medium">Flash complete!</p><p class="mt-1 text-indigo-500">Press the small Reset button near the bottom right, then hold the power button for 3 seconds.</p></div>';
       } catch (err) {
         const failIdx = states.findIndex(s => s === 'running');
         if (failIdx >= 0) states[failIdx] = 'error';

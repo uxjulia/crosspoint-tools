@@ -208,6 +208,10 @@ export class CrossPointFlasher {
     const matched = expected.find(t => matchesPartitionTable(partitions, t));
 
     if (!matched) {
+      // If the device's actual layout matches the other model, point the user at it.
+      if (this.model === 'x4' && matchesPartitionTable(partitions, X3_PARTITION_TABLE)) {
+        throw new Error('This device looks like an X3, not an X4. Go back and select Xteink X3.');
+      }
       throw new Error(`Unexpected partition layout for ${this.model.toUpperCase()}. Make sure you selected the correct device model.`);
     }
 
