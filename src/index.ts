@@ -532,30 +532,18 @@ async function handleReleaseFirmware(
 
 const STOCK_CHECK_URLS: Record<string, Record<string, string>> = {
   x4: {
-    ch: 'http://47.122.74.33:5000/api/check-update?current_version=V3.0.1&device_type=ESP32C3',
-    en: 'http://gotaserver.xteink.com/api/check-update?current_version=V3.0.1&device_type=ESP32C3&device_id=1234',
+    ch: 'https://api-prod.xteink.cn/api/v1/check-update?current_version=V5.1.0&device_type=ESP32C3&device_id=12345&lng=en',
+    en: 'https://api-prod.xteink.cc/api/v1/check-update?current_version=V5.1.0&device_type=ESP32C3&device_id=12345&lng=en',
   },
   x3: {
-    ch: 'https://api-prod.xteink.cn/api/v1/check-update?current_version=V5.1.3&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=zh',
-    en: 'http://8.216.34.42:5001/api/v1/check-update?current_version=V5.1.3&device_type=ESP32C3_X3&device_id=1052463&choose=1&lang=en',
-  },
-};
-
-const STOCK_FALLBACKS: Record<string, Record<string, { version: string; download_url: string }>> = {
-  x4: {
-    en: { version: 'V3.1.1', download_url: 'http://gotaserver.xteink.com/api/download/ESP32C3/V3.1.1/V3.1.1-EN.bin' },
-    ch: { version: 'V3.1.9', download_url: 'http://47.122.74.33:5000/api/download/ESP32C3/V3.1.9/V3.1.9_CH_X4_0117.bin' },
-  },
-  x3: {
-    en: { version: 'V5.1.6', download_url: 'http://8.216.34.42:5001/api/v1/download/ESP32C3_X3/V5.1.6/V5.1.6-X3-EN-PROD-0304_.bin?choose=1&lang=en' },
-    ch: { version: 'V5.2.13', download_url: 'https://domestic-upload-file-api.oss-cn-hangzhou.aliyuncs.com/admin_uploads/firmware/202603/26/751e134f-22b1-4a00-bbfa-0942593ef867/V5.2.13-X3-CH-PROD-0326_173844.bin' },
+    ch: 'https://api-prod.xteink.cn/api/v1/check-update?current_version=V5.1.0&device_type=ESP32C3_X3&device_id=12345&lng=en',
+    en: 'https://api-prod.xteink.cc/api/v1/check-update?current_version=V5.1.0&device_type=ESP32C3_X3&device_id=12345&lng=en',
   },
 };
 
 async function fetchStockFirmwareInfo(model: string, lang: string) {
   const checkUrl = STOCK_CHECK_URLS[model]?.[lang];
-  const fallback = STOCK_FALLBACKS[model]?.[lang];
-  if (!checkUrl || !fallback) return null;
+  if (!checkUrl) return null;
 
   try {
     const res = await fetch(checkUrl, { signal: AbortSignal.timeout(5000) });
@@ -565,7 +553,7 @@ async function fetchStockFirmwareInfo(model: string, lang: string) {
     }
   } catch { /* fall through */ }
 
-  return fallback;
+  return null;
 }
 
 async function handleStockFirmwareInfo(
@@ -618,12 +606,6 @@ async function handleStockFirmwareCache(
   return json({ ok: true, r2Key, version, size: data.byteLength }, 200, headers);
 }
 
-// R2 keys for stock firmware that can't be fetched from Workers (Chinese IP servers)
-const STOCK_R2_KEYS: Record<string, string> = {
-  'x4-ch': 'stock/x4-ch-V3.1.9.bin',
-  'x3-en': 'stock/x3-en-V5.1.6.bin',
-};
-
 async function handleStockFirmware(
   url: URL,
   env: Env,
@@ -649,24 +631,7 @@ async function handleStockFirmware(
     }
   }
 
-  // Fallback: try hardcoded R2 keys from initial upload
-  const r2Key = STOCK_R2_KEYS[`${model}-${lang}`];
-  if (r2Key) {
-    const object = await env.FIRMWARE_BUCKET.get(r2Key);
-    if (object) {
-      const fallbackVersion = STOCK_FALLBACKS[model]?.[lang]?.version || '';
-      return new Response(object.body, {
-        headers: {
-          ...headers,
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${model}-${lang}-firmware.bin"`,
-          'X-Firmware-Version': fallbackVersion,
-        },
-      });
-    }
-  }
-
-  // For firmware not in R2, fetch version info then download directly
+  // Fetch version info then download directly
   const info = await fetchStockFirmwareInfo(model, lang);
   if (!info) {
     return json({ error: 'Invalid model or language' }, 400, headers);
