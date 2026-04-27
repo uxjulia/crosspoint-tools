@@ -173,19 +173,26 @@ function matchesPartitionTable(actual, expected) {
 // --- Main Flasher Class ---
 
 export class CrossPointFlasher {
-  constructor(model = 'x4') {
+  constructor(model = 'x4', port = null) {
     this.espLoader = null;
     this.model = model;
     this.layout = getLayout(model);
+    this.port = port;
   }
 
-  async connect() {
+  // Must be called synchronously inside a user gesture (click handler) before any awaits.
+  static async requestPort() {
     if (!('serial' in navigator && navigator.serial)) {
       throw new Error('WebSerial is not supported. Please use Chrome or Edge.');
     }
-    const port = await navigator.serial.requestPort({
+    return await navigator.serial.requestPort({
       filters: [{ usbVendorId: 12346, usbProductId: 4097 }],
     });
+  }
+
+  async connect() {
+    const port = this.port || await CrossPointFlasher.requestPort();
+    this.port = port;
     await loadEsptool();
     const transport = new Transport(port, false);
     this.espLoader = new ESPLoader({

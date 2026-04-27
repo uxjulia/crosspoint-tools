@@ -463,6 +463,13 @@
     document.getElementById('flash-ea-btn').addEventListener('click', async () => {
       if (!deviceModel) { alert('Please select your device model first.'); return; }
 
+      let serialPort;
+      try {
+        serialPort = await CrossPointFlasher.requestPort();
+      } catch (err) {
+        return;
+      }
+
       const flashBtn = document.getElementById('flash-ea-btn');
       const progressCard = document.getElementById('progress-card');
       const progressStatus = document.getElementById('progress-status');
@@ -482,7 +489,7 @@
         const firmware = await fetchEarlyAccessFirmware();
         progressStatus.innerHTML = '';
 
-        const flasher = new CrossPointFlasher(deviceModel);
+        const flasher = new CrossPointFlasher(deviceModel, serialPort);
         await flasher.flashFirmware(firmware, {
           skipReset,
           onStepChange: (idx, name, status) => {
@@ -790,6 +797,13 @@
     document.getElementById('cf-flash-btn').addEventListener('click', async () => {
       if (!deviceModel) { alert('Please select your device model first.'); return; }
 
+      let serialPort;
+      try {
+        serialPort = await CrossPointFlasher.requestPort();
+      } catch (err) {
+        return;
+      }
+
       const flashBtn = document.getElementById('cf-flash-btn');
       const progressCard = document.getElementById('cf-progress-card');
       const progressStatus = document.getElementById('cf-progress-status');
@@ -822,7 +836,7 @@
         const firmware = await fetchCustomFirmware();
         progressStatus.innerHTML = '';
 
-        const flasher = new CrossPointFlasher(deviceModel);
+        const flasher = new CrossPointFlasher(deviceModel, serialPort);
         await flasher.flashFirmware(firmware, {
           skipReset: cfSkipReset,
           onStepChange: (idx, name, status) => { states[idx] = status; renderCfSteps(states); },
