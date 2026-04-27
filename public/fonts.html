@@ -229,6 +229,15 @@
       files = files.filter(function(f) { return /\.(ttf|otf)$/i.test(f.name); });
       if (!files.length) return;
 
+      // Skip extra weight variants we can't map to the 4-style model
+      // (e.g. MediumItalic shouldn't be picked over plain Italic)
+      var EXTRA_WEIGHT_RE = /(thin|hairline|extra[-_ ]?light|ultra[-_ ]?light|light|medium|semi[-_ ]?bold|demi[-_ ]?bold|extra[-_ ]?bold|ultra[-_ ]?bold|black|heavy)[-_ ]?(italic|oblique)/i;
+      files = files.filter(function(f) {
+        var stem = f.name.replace(/\.(ttf|otf)$/i, '');
+        return !EXTRA_WEIGHT_RE.test(stem);
+      });
+      if (!files.length) return;
+
       // Style suffix patterns (order matters: most specific first)
       var STYLE_PATTERNS = [
         { style: 'bolditalic', re: /[-_ ]?(bold[-_ ]?italic|bold[-_ ]?oblique|bolditalic|boldoblique|BdIt|bi)$/i },
