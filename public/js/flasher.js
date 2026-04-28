@@ -25,8 +25,8 @@ const CRC32_TABLE = new Uint32Array(256);
   }
 })();
 
-function crc32(data) {
-  let crc = 0xFFFFFFFF;
+function crc32(data, previous = 0) {
+  let crc = previous === 0 ? 0 : (previous ^ 0xFFFFFFFF) >>> 0;
   for (let i = 0; i < data.length; i++) {
     crc = CRC32_TABLE[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
   }
@@ -53,7 +53,8 @@ function isEqualBytes(a, b) {
 }
 
 function generateCrc32Le(sequence) {
-  return u32ToLeBytes(crc32(u32ToLeBytes(sequence)));
+  // ESP-IDF stores crc32_le(UINT32_MAX, ota_seq, 4) in otadata entries.
+  return u32ToLeBytes(crc32(u32ToLeBytes(sequence), 0xFFFFFFFF));
 }
 
 // --- Partition Layouts ---
