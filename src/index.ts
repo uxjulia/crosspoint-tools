@@ -73,6 +73,9 @@ async function handleApi(
       case '/api/build/upload':
         return handleBuildUpload(request, env, corsHeaders);
 
+      case '/api/catalog':
+        return handleCatalog(env, corsHeaders);
+
       case '/api/release/latest':
         return handleLatestRelease(env, corsHeaders);
 
@@ -454,9 +457,10 @@ async function handleBuildUpload(
   const buildDate = new Date().toISOString();
 
   const firmwareData = await request.arrayBuffer();
+  const sha256 = await sha256Hex(firmwareData);
 
   // Upload to R2
-  const metadata = { commit, version, buildDate };
+  const metadata = { commit, version, buildDate, sha256 };
   await env.FIRMWARE_BUCKET.put(`builds/${commit.substring(0, 7)}/firmware.bin`, firmwareData, {
     customMetadata: metadata,
   });
@@ -464,7 +468,9 @@ async function handleBuildUpload(
     customMetadata: metadata,
   });
 
-  return json({ ok: true, size: firmwareData.byteLength }, 200, headers);
+  await env.BUILD_META.put(`sha256:insider:${commit}`, sha256);
+
+  return json({ ok: true, size: firmwareData.byteLength, sha256 }, 200, headers);
 }
 
 // --- Stable Release (from GitHub Releases) ---
@@ -512,7 +518,10 @@ async function handleLatestRelease(
     body: release.body,
     firmwareUrl: firmwareAsset?.browser_download_url || null,
     firmwareSize: firmwareAsset?.size || null,
-  }, 200, headers);
+  }, 200, {
+    ...headers,
+    'Cache-Control': 'public, max-age=300',
+  });
 }
 
 async function handleReleaseFirmware(
@@ -1318,8 +1327,11 @@ async function handleBetaCreate(
 
   const id = `beta-${Date.now().toString(36)}`;
   const data = await firmware.arrayBuffer();
+  const sha256 = await sha256Hex(data);
 
-  await env.FIRMWARE_BUCKET.put(`builds/beta/${id}/firmware.bin`, data);
+  await env.FIRMWARE_BUCKET.put(`builds/beta/${id}/firmware.bin`, data, {
+    customMetadata: { sha256 },
+  });
 
   const build: BetaBuild = {
     id,
@@ -1327,6 +1339,7 @@ async function handleBetaCreate(
     notes: (typeof notes === 'string' ? notes.trim() : '') || '',
     createdAt: new Date().toISOString(),
     firmwareSize: data.byteLength,
+    firmwareSha256: sha256,
   };
 
   const list = await getBetaList(env);
@@ -1417,6 +1430,175 @@ async function handleBetaFirmware(
       'Content-Disposition': `attachment; filename="${id}.bin"`,
       'Content-Length': String(object.size),
     },
+  });
+}
+
+// --- Catalog (aggregate of stable + insider + beta) ---
+
+interface CatalogRelease {
+  id: string;
+  channel: 'stable' | 'insider' | 'beta';
+  name: string;
+  version: string;
+  released_at: string;
+  notes: string;
+  firmware_url: string;
+  firmware_sha256: string;
+  size: number;
+}
+
+const ORIGIN = 'https://crosspointreader.com';
+
+async function sha256Hex(data: ArrayBuffer): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getOrComputeR2Sha(
+  env: Env,
+  cacheKey: string,
+  r2Key: string
+): Promise<{ sha: string; size: number } | null> {
+  const cached = await env.BUILD_META.get(cacheKey);
+  const head = await env.FIRMWARE_BUCKET.head(r2Key);
+  if (!head) return null;
+  const size = head.size;
+  if (cached) return { sha: cached, size };
+
+  const meta = head.customMetadata?.sha256;
+  if (meta) {
+    await env.BUILD_META.put(cacheKey, meta);
+    return { sha: meta, size };
+  }
+
+  const obj = await env.FIRMWARE_BUCKET.get(r2Key);
+  if (!obj) return null;
+  const buf = await obj.arrayBuffer();
+  const sha = await sha256Hex(buf);
+  await env.BUILD_META.put(cacheKey, sha);
+  return { sha, size };
+}
+
+async function fetchStableForCatalog(env: Env): Promise<CatalogRelease | null> {
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/crosspoint-reader/crosspoint-reader/releases/latest',
+      { headers: ghFetchHeaders(env), cf: { cacheTtl: 300, cacheEverything: true } as RequestInitCfProperties }
+    );
+    if (!res.ok) return null;
+    const release = await res.json() as {
+      tag_name: string;
+      name: string;
+      published_at: string;
+      body: string;
+      assets: Array<{ name: string; browser_download_url: string; size: number }>;
+    };
+    const asset = release.assets.find(a => a.name.endsWith('firmware.bin'));
+    if (!asset) return null;
+
+    const cacheKey = `sha256:stable:${release.tag_name}`;
+    let sha = await env.BUILD_META.get(cacheKey);
+    if (!sha) {
+      const fwRes = await fetch(asset.browser_download_url, {
+        headers: { 'User-Agent': 'crosspoint-tools' },
+      });
+      if (!fwRes.ok) return null;
+      const buf = await fwRes.arrayBuffer();
+      sha = await sha256Hex(buf);
+      await env.BUILD_META.put(cacheKey, sha);
+    }
+
+    return {
+      id: `stable-${release.tag_name}`,
+      channel: 'stable',
+      name: release.name || release.tag_name,
+      version: release.tag_name,
+      released_at: release.published_at,
+      notes: release.body || '',
+      firmware_url: `${ORIGIN}/api/release/firmware`,
+      firmware_sha256: sha,
+      size: asset.size,
+    };
+  } catch (err) {
+    console.error('Stable catalog fetch failed:', err);
+    return null;
+  }
+}
+
+async function fetchInsiderForCatalog(env: Env): Promise<CatalogRelease | null> {
+  const raw = await env.BUILD_META.get('latest-build');
+  if (!raw) return null;
+  const meta: BuildMetadata = JSON.parse(raw);
+  if (meta.status !== 'success') return null;
+
+  const cacheKey = `sha256:insider:${meta.commit}`;
+  const result = await getOrComputeR2Sha(env, cacheKey, 'builds/latest/firmware.bin');
+  if (!result) return null;
+
+  const notes = meta.summary || meta.commitMessage || '';
+
+  return {
+    id: `insider-${meta.commitShort}`,
+    channel: 'insider',
+    name: `master-${meta.commitShort}`,
+    version: meta.version || `master-${meta.commitShort}`,
+    released_at: meta.buildDate,
+    notes,
+    firmware_url: `${ORIGIN}/api/build/firmware`,
+    firmware_sha256: result.sha,
+    size: meta.firmwareSize || result.size,
+  };
+}
+
+async function fetchBetasForCatalog(env: Env): Promise<CatalogRelease[]> {
+  const list = await getBetaList(env);
+  const out: CatalogRelease[] = [];
+  for (const b of list) {
+    let sha = b.firmwareSha256;
+    let size = b.firmwareSize;
+    if (!sha) {
+      const result = await getOrComputeR2Sha(env, `sha256:beta:${b.id}`, `builds/beta/${b.id}/firmware.bin`);
+      if (!result) continue;
+      sha = result.sha;
+      size = result.size;
+    }
+    out.push({
+      id: b.id,
+      channel: 'beta',
+      name: b.name,
+      version: b.version || b.name,
+      released_at: b.createdAt,
+      notes: b.notes,
+      firmware_url: `${ORIGIN}/api/beta/${b.id}/firmware`,
+      firmware_sha256: sha,
+      size,
+    });
+  }
+  return out;
+}
+
+async function handleCatalog(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const [stable, insider, betas] = await Promise.all([
+    fetchStableForCatalog(env),
+    fetchInsiderForCatalog(env),
+    fetchBetasForCatalog(env),
+  ]);
+
+  const releases: CatalogRelease[] = [];
+  if (stable) releases.push(stable);
+  if (insider) releases.push(insider);
+  for (const b of betas) releases.push(b);
+
+  return json({
+    schema_version: 1,
+    generated_at: new Date().toISOString(),
+    releases,
+  }, 200, {
+    ...headers,
+    'Cache-Control': 'public, max-age=300',
   });
 }
 

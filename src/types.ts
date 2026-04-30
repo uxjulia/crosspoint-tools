@@ -61,8 +61,10 @@ export interface BetaBuild {
   id: string;
   name: string;
   notes: string;
+  version?: string;
   createdAt: string;
   firmwareSize: number;
+  firmwareSha256?: string;
 }
 
 export interface GitHubPushEvent {
