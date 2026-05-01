@@ -7,7 +7,7 @@ const MODAL_HTML = `
     <div class="flex items-start justify-between gap-4 border-b border-stone-100 px-6 py-4">
       <div>
         <h2 id="download-modal-title" class="font-serif text-xl font-medium text-stone-900">Download firmware</h2>
-        <p class="mt-1 text-sm/6 text-stone-500">Need the .bin file for SD flashing? Holding the left side button + power button at boot lets the OEM bootloader flash a new firmware from the SD card.</p>
+        <p class="mt-1 text-sm/6 text-stone-500">Need the .bin file for SD flashing? Holding the left side button + power button at boot lets the OEM bootloader flash a new firmware from the SD card. Rename the downloaded file to <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">update.bin</code> on the SD card root.</p>
       </div>
       <button id="download-modal-close" type="button" class="-mr-2 -mt-1 rounded-md p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700" aria-label="Close">
         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -15,6 +15,10 @@ const MODAL_HTML = `
     </div>
 
     <div class="space-y-6 px-6 py-5">
+      <div class="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm/6 text-amber-900">
+        <span class="font-semibold">Note:</span> Currently there is no way to upgrade CrossPoint outside of an official OTA once you flash this on a locked device.
+      </div>
+
       <!-- Device -->
       <div>
         <div class="text-sm font-semibold text-stone-900">Select your device</div>
@@ -96,11 +100,18 @@ function renderFirmwareList() {
     return;
   }
 
-  const releases = state.catalog.releases || [];
+  // Stable releases are X4-only builds; X3 has no compatible stable, so hide it.
+  const releases = (state.catalog.releases || []).filter(r =>
+    state.model === 'x3' ? r.channel !== 'stable' : true
+  );
   if (releases.length === 0) {
     list.innerHTML = '<p class="text-sm text-stone-400">No firmware available right now.</p>';
     action.classList.add('hidden');
     return;
+  }
+
+  if (state.selectedReleaseId && !releases.some(r => r.id === state.selectedReleaseId)) {
+    state.selectedReleaseId = null;
   }
 
   // Order: stable, insider, betas (newest first)
