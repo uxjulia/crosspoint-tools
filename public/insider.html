@@ -60,15 +60,15 @@
 </head>
 <body class="min-h-dvh bg-stone-50 font-sans">
   <nav class="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
-    <div class="mx-auto flex max-w-2xl items-center justify-between px-6 py-3">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
       <a href="/" class="flex items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
         <img src="/logo.png" alt="" class="size-7 rounded-md">
         <span class="text-base/6 font-medium tracking-tight sm:text-sm/6">CrossPoint Reader</span>
       </a>
-      <div class="flex gap-1">
-        <a href="/" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Stable</a>
-        <a href="/insider" class="rounded-md bg-stone-100 px-3 py-1.5 text-sm/5 font-medium text-stone-900 no-underline">Insider Builds</a>
-        <a href="/fonts" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span></a>
+      <div class="flex items-center gap-1">
+        <a href="/insider" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Insider Builds</a>
+        <a href="/fonts" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span></a>
+        <a href="#" data-open-download-modal class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Download Firmware</a>
       </div>
     </div>
   </nav>
@@ -162,6 +162,10 @@
           <div id="flash-section" class="mt-5 hidden">
             <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:cursor-not-allowed" id="flash-ea-btn" disabled>
               Flash Nightly Build
+            </button>
+            <button type="button" data-open-download-modal class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+              <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
+              Download Firmware
             </button>
             <p class="mt-2 text-xs text-stone-400">Make sure you've selected the correct device model above before flashing.</p>
             <a href="#changelog" class="mt-2 inline-block text-sm font-medium text-brand-500 hover:text-brand-600">View Changelog</a>
@@ -910,6 +914,10 @@
 
     // Initialize custom font section
     initCustomFontBuild();
+  </script>
+  <script type="module">
+    import { initDownloadModal } from '/js/download-modal.js';
+    initDownloadModal();
   </script>
 </body>
 </html>
