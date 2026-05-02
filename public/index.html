@@ -536,6 +536,7 @@
 <a href="/insider" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Insider Builds</a>
         <a href="/fonts" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700 max-sm:hidden">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span></a>
         <a href="#" data-open-download-modal class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Download Firmware</a>
+        <a href="#unlock-tool" class="rounded-md px-3 py-1.5 text-sm/5 font-medium text-stone-500 no-underline hover:text-stone-700">Unlock Tool</a>
         <!-- <a href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener" class="ml-1 inline-flex items-center gap-1.5 rounded-md bg-[#B8953A] py-1.5 pr-3 pl-2 text-sm/5 font-semibold text-white no-underline hover:bg-[#9A7A2E] transition-colors">
           <img src="/crown.svg" alt="" class="size-4 brightness-0 invert">
           Fund CrossPoint
@@ -888,7 +889,7 @@
 
       <div class="mt-8 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3 text-sm/6 text-red-800">
         <p>We have been made aware by the community that recent shipments of Xteink may have disabled the capability to flash custom firmware. <a href="https://www.reddit.com/r/xteinkereader/comments/1szk0pq/flashing_of_firmwares_disabled/" target="_blank" rel="noopener" class="font-medium underline underline-offset-2 hover:text-red-900">Read more</a>.</p>
-        <p class="mt-2">If you have a locked device and want to help us work around it, we need one on hand. <a href="https://www.reddit.com/r/xteinkereader/comments/1szld39/if_youre_in_the_us_and_got_a_firmware_locked/" target="_blank" rel="noopener" class="font-medium underline underline-offset-2 hover:text-red-900">Get in touch</a>.</p>
+        <p class="mt-2">If your device is locked, our <a href="#unlock-tool" class="font-medium underline underline-offset-2 hover:text-red-900">experimental Unlock Tool</a> (Apple Silicon Macs only for now) lets you install CrossPoint over OTA instead of USB.</p>
       </div>
 
       <div id="main-content" class="mt-10 space-y-6">
@@ -1082,6 +1083,23 @@
         <div class="marquee-item"><img src="/community/4.webp" alt="" loading="lazy"></div>
         <div class="marquee-item"><img src="/community/5.webp" alt="" loading="lazy"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- Unlock Tool CTA -->
+  <section id="unlock-tool" class="scroll-mt-20 border-t border-stone-200 bg-stone-50 py-16 sm:py-20">
+    <div class="mx-auto max-w-3xl px-6 text-center">
+      <p class="text-sm font-semibold text-red-600">Experimental · Apple Silicon Mac only</p>
+      <h2 class="mx-auto mt-2 max-w-[24ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance">Unlock locked Xteink devices.</h2>
+      <p class="mx-auto mt-3 max-w-[60ch] text-base/7 text-stone-500 text-pretty">Recent Xteink shipments may ship with USB flashing disabled. Xteink Unlocker turns your Mac into a local hotspot that intercepts the device's official update channel and serves CrossPoint instead of the stock firmware.</p>
+      <p class="mx-auto mt-3 max-w-[60ch] text-base/7 text-stone-500 text-pretty">macOS on Apple Silicon (M1 or later) only for now. Windows and Intel Mac support is planned.</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
+        <a href="https://unlocker-releases.crosspointreader.com/unlocker-latest.dmg" class="inline-flex items-center gap-2 rounded-lg bg-stone-900 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900">
+          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
+          Download Unlock Tool (.dmg)
+        </a>
+      </div>
+      <p class="mx-auto mt-4 max-w-[52ch] text-xs text-stone-400">Use at your own risk. The Unlock Tool is in early testing and may change frequently.</p>
     </div>
   </section>
 
