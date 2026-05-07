@@ -1162,7 +1162,7 @@
       document.getElementById('step-num-2').className = selectedFw
         ? 'flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-500 font-mono text-xs font-semibold text-white'
         : 'flex size-7 shrink-0 items-center justify-center rounded-full bg-stone-200 font-mono text-xs font-semibold text-stone-500';
-      const panels = ['crosspoint', 'stock-en', 'stock-ch', 'custom', 'backup'];
+      const panels = ['crosspoint', 'stock-en', 'stock-ch', 'custom'];
       panels.forEach(p => {
         document.getElementById(`fw-panel-${p}`).classList.toggle('hidden', p !== selectedFw);
       });
@@ -1315,12 +1315,6 @@
       customFile = e.target.files[0] || null;
       document.getElementById('custom-file-label').textContent = customFile ? customFile.name : 'Choose file...';
       document.querySelector('[data-action="custom"]').disabled = !customFile;
-    });
-
-    document.getElementById('fullflash-file-input').addEventListener('change', (e) => {
-      fullFlashFile = e.target.files[0] || null;
-      document.getElementById('fullflash-file-label').textContent = fullFlashFile ? fullFlashFile.name : 'Choose backup file...';
-      document.querySelector('[data-action="write-full"]').disabled = !fullFlashFile;
     });
 
     // --- Progress rendering ---
