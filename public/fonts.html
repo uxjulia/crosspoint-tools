@@ -216,10 +216,10 @@
     </div>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
-  <script src="/js/cpfont-builder.js"></script>
   <script>
+    // builtFiles entries: { filename, url, byteLength }
     var builtFiles = [];
+    var pollTimer = null;
 
     // --- Auto-detect styles from filenames ---
     document.getElementById('fontFolder').addEventListener('change', function(e) {
@@ -337,10 +337,19 @@
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    function sanitizeFamilyName(name) {
+      return (name || 'CustomFont').replace(/[^A-Za-z0-9_-]+/g, '');
+    }
+
     async function startBuild() {
       var regularFile = document.getElementById('fontRegular').files[0];
       if (!regularFile) {
         alert('Please select a Regular font file.');
+        return;
+      }
+      var familyRaw = document.getElementById('familyName').value.trim();
+      if (!familyRaw) {
+        alert('Please enter a font family name.');
         return;
       }
 
@@ -356,84 +365,148 @@
       logPanel.classList.remove('hidden');
       resultsPanel.classList.add('hidden');
       progressWrap.classList.remove('hidden');
-      progressBar.style.width = '0%';
+      progressBar.style.width = '5%';
+      progressText.textContent = 'Uploading fonts...';
       builtFiles = [];
+      if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
 
       try {
-        var customSizes = [
+        var sizes = [
           parseInt(document.getElementById('size0').value, 10) || 12,
           parseInt(document.getElementById('size1').value, 10) || 14,
           parseInt(document.getElementById('size2').value, 10) || 16,
           parseInt(document.getElementById('size3').value, 10) || 18,
         ];
 
-        var results = await CpFontBuilder.buildAllCpfonts({
-          regular: regularFile,
-          bold: document.getElementById('fontBold').files[0] || null,
-          italic: document.getElementById('fontItalic').files[0] || null,
-          boldItalic: document.getElementById('fontBoldItalic').files[0] || null,
-          familyName: document.getElementById('familyName').value,
-          intervals: document.getElementById('intervalPreset').value,
-          sizes: customSizes,
-          onLog: log,
-          onProgress: function(current, total, sizePt, styleName) {
-            var pct = Math.min(100, Math.round(current / total * 100));
-            progressBar.style.width = pct + '%';
-            progressText.textContent = 'Building ' + styleName + ' at ' + sizePt + 'pt... (' + pct + '%)';
-          },
+        // Always start fresh — clears any prior build for this user so we
+        // never collide with the worker's per-user lock from an old session.
+        await fetch('/api/font-build/clear', { method: 'POST', credentials: 'same-origin' });
+
+        var fd = new FormData();
+        fd.append('regular', regularFile);
+        var bold = document.getElementById('fontBold').files[0];
+        var italic = document.getElementById('fontItalic').files[0];
+        var boldItalic = document.getElementById('fontBoldItalic').files[0];
+        if (bold)       fd.append('bold', bold);
+        if (italic)     fd.append('italic', italic);
+        if (boldItalic) fd.append('bolditalic', boldItalic);
+        fd.append('family', familyRaw);
+        fd.append('sizes', sizes.join(','));
+        fd.append('intervals', document.getElementById('intervalPreset').value);
+
+        log('Uploading ' + (1 + (bold?1:0) + (italic?1:0) + (boldItalic?1:0)) + ' file(s)...', 'info');
+
+        var res = await fetch('/api/font-build/upload', {
+          method: 'POST',
+          body: fd,
+          credentials: 'same-origin',
         });
-
-        builtFiles = results;
-        progressBar.style.width = '100%';
-        progressText.textContent = 'Done!';
-
-        // Show results
-        var fileList = document.getElementById('fileList');
-        fileList.innerHTML = '';
-        var totalSize = 0;
-        for (var i = 0; i < results.length; i++) {
-          var r = results[i];
-          totalSize += r.byteLength;
-          var li = document.createElement('li');
-          li.className = 'flex items-center justify-between py-3';
-          li.innerHTML =
-            '<div><span class="text-sm font-medium text-stone-900">' + r.filename + '</span>' +
-            '<span class="ml-2 text-xs text-stone-400">' + formatSize(r.byteLength) + '</span></div>' +
-            '<button onclick="downloadFile(' + i + ')" class="rounded-md px-2.5 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-colors">Download</button>';
-          fileList.appendChild(li);
+        var body = await res.json().catch(function() { return {}; });
+        if (!res.ok) {
+          throw new Error(body.error || ('Upload failed: HTTP ' + res.status));
         }
-        resultsPanel.classList.remove('hidden');
-        log('Total: ' + results.length + ' files, ' + formatSize(totalSize), 'success');
+        log('Build queued (id ' + body.buildId + '). Running fontconvert_sdcard.py on a fresh runner...', 'info');
+        progressBar.style.width = '15%';
+        progressText.textContent = 'Building... (this usually takes ~30s)';
 
+        await pollUntilDone();
       } catch (err) {
         log('Error: ' + err.message, 'error');
         progressText.textContent = 'Failed';
+        btn.disabled = false;
       }
-
-      btn.disabled = false;
     }
 
-    function downloadFile(idx) {
-      var f = builtFiles[idx];
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(f.blob);
-      a.download = f.filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
+    function pollUntilDone() {
+      var startedAt = Date.now();
+      var lastLogLen = 0;
+      var progressBar = document.getElementById('progressBar');
+      var progressText = document.getElementById('progressText');
+      var btn = document.getElementById('buildBtn');
+
+      return new Promise(function(resolve, reject) {
+        function tick() {
+          fetch('/api/font-build/status', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              var b = data.build;
+              if (!b) {
+                throw new Error('Build disappeared. Try again?');
+              }
+              // Stream new log lines into the panel as they appear.
+              if (b.log && b.log.length > lastLogLen) {
+                var fresh = b.log.slice(lastLogLen);
+                lastLogLen = b.log.length;
+                fresh.split('\n').forEach(function(line) {
+                  if (line.trim()) log(line, 'info');
+                });
+              }
+              if (b.status === 'success') {
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Done in ' + Math.round((Date.now() - startedAt) / 1000) + 's';
+                renderResults(b);
+                btn.disabled = false;
+                resolve();
+                return;
+              }
+              if (b.status === 'failed') {
+                throw new Error(b.error || 'Build failed. Check Actions logs.');
+              }
+              // Soft progress: 15% -> 90% over ~45s, then idle at 90%.
+              var elapsed = (Date.now() - startedAt) / 1000;
+              var pct = Math.min(90, 15 + Math.round(elapsed / 45 * 75));
+              progressBar.style.width = pct + '%';
+              progressText.textContent = (b.status === 'pending' ? 'Queued' : 'Building') +
+                '... ' + Math.round(elapsed) + 's elapsed';
+              pollTimer = setTimeout(tick, 2000);
+            })
+            .catch(function(err) {
+              btn.disabled = false;
+              reject(err);
+            });
+        }
+        tick();
+      });
+    }
+
+    function renderResults(build) {
+      var resultsPanel = document.getElementById('resultsPanel');
+      var fileList = document.getElementById('fileList');
+      fileList.innerHTML = '';
+      builtFiles = (build.outputs || []).map(function(name) {
+        return {
+          filename: name,
+          url: '/api/font-build/result/' + encodeURIComponent(name),
+          byteLength: null,
+        };
+      });
+      builtFiles.forEach(function(f, i) {
+        var li = document.createElement('li');
+        li.className = 'flex items-center justify-between py-3';
+        li.innerHTML =
+          '<div><span class="text-sm font-medium text-stone-900">' + f.filename + '</span></div>' +
+          '<a href="' + f.url + '" download="' + f.filename + '" class="rounded-md px-2.5 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-colors">Download</a>';
+        fileList.appendChild(li);
+      });
+      resultsPanel.classList.remove('hidden');
+      log('Generated ' + builtFiles.length + ' file(s)', 'success');
     }
 
     async function downloadAll() {
       if (builtFiles.length === 0) return;
 
-      // Use JSZip if available, otherwise download individually
       if (typeof JSZip !== 'undefined') {
         var zip = new JSZip();
-        var familyName = CpFontBuilder.sanitizeFamilyName(
-          document.getElementById('familyName').value || 'CustomFont'
-        );
+        var familyName = sanitizeFamilyName(document.getElementById('familyName').value);
         var folder = zip.folder(familyName);
         for (var i = 0; i < builtFiles.length; i++) {
-          folder.file(builtFiles[i].filename, builtFiles[i].blob);
+          var f = builtFiles[i];
+          var res = await fetch(f.url, { credentials: 'same-origin' });
+          if (!res.ok) {
+            log('Failed to fetch ' + f.filename + ' (HTTP ' + res.status + ')', 'error');
+            continue;
+          }
+          folder.file(f.filename, await res.blob());
         }
         var content = await zip.generateAsync({ type: 'blob' });
         var a = document.createElement('a');
@@ -442,12 +515,37 @@
         a.click();
         URL.revokeObjectURL(a.href);
       } else {
-        // Fallback: download each file
-        for (var i = 0; i < builtFiles.length; i++) {
-          downloadFile(i);
-        }
+        // Fallback: trigger individual downloads via the existing links.
+        builtFiles.forEach(function(f) {
+          var a = document.createElement('a');
+          a.href = f.url;
+          a.download = f.filename;
+          a.click();
+        });
       }
     }
+
+    // On load: if there's a prior in-progress build for this user, resume polling.
+    (async function resumeIfBuilding() {
+      try {
+        var res = await fetch('/api/font-build/status', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        var data = await res.json();
+        var b = data.build;
+        if (!b) return;
+        if (b.status === 'success') {
+          renderResults(b);
+        } else if (b.status === 'pending' || b.status === 'building') {
+          document.getElementById('buildBtn').disabled = true;
+          document.getElementById('progressWrap').classList.remove('hidden');
+          document.getElementById('progressBar').style.width = '15%';
+          document.getElementById('progressText').textContent = 'Resuming previous build...';
+          document.getElementById('logPanel').classList.remove('hidden');
+          log('Resuming build ' + b.buildId + '...', 'info');
+          pollUntilDone().catch(function(err) { log('Error: ' + err.message, 'error'); });
+        }
+      } catch (e) { /* no-op */ }
+    })();
 
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
