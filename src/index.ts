@@ -1501,7 +1501,9 @@ async function handleFontBuildFileDownload(
   // Path: /api/font-build/files/{buildId}/{style}.ttf
   const parts = url.pathname.replace('/api/font-build/files/', '').split('/');
   if (parts.length !== 2) return json({ error: 'Invalid path' }, 400, headers);
-  const [buildId, filename] = parts;
+  const [buildId, rawFilename] = parts;
+  let filename: string;
+  try { filename = decodeURIComponent(rawFilename); } catch { return json({ error: 'Invalid path' }, 400, headers); }
   const style = filename.replace(/\.ttf$/i, '') as FontBuildStyle;
   if (!FONT_BUILD_STYLES.includes(style)) {
     return json({ error: 'Invalid style' }, 400, headers);
@@ -1605,7 +1607,16 @@ async function handleFontBuildResultDownload(
   const buildId = await env.BUILD_META.get(`font-build:user:${uid}`);
   if (!buildId) return json({ error: 'Not found' }, 404, headers);
 
-  const filename = url.pathname.replace('/api/font-build/result/', '');
+  // Family names can contain spaces (the auto-detect on the frontend converts
+  // "Noto-Serif" -> "Noto Serif"), so the script writes "Noto Serif_12.cpfont"
+  // to R2 and the frontend encodes that as "Noto%20Serif_12.cpfont" in the URL.
+  // Decode before validating and looking up R2.
+  let filename: string;
+  try {
+    filename = decodeURIComponent(url.pathname.replace('/api/font-build/result/', ''));
+  } catch {
+    return json({ error: 'Invalid filename' }, 400, headers);
+  }
   if (!/^[A-Za-z0-9 _.-]+\.cpfont$/.test(filename)) {
     return json({ error: 'Invalid filename' }, 400, headers);
   }
@@ -1613,11 +1624,15 @@ async function handleFontBuildResultDownload(
   const object = await env.FIRMWARE_BUCKET.get(`font-builds/${buildId}/out/${filename}`);
   if (!object) return json({ error: 'Not found' }, 404, headers);
 
+  // RFC 5987 / 6266: bare quoted filename can't contain spaces safely on all
+  // clients, so include filename* for UTF-8 / spaces and keep the simple form
+  // as a fallback (with spaces -> underscores).
+  const fallback = filename.replace(/[^A-Za-z0-9._-]/g, '_');
   return new Response(object.body, {
     headers: {
       ...headers,
       'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       'Content-Length': String(object.size),
     },
   });
