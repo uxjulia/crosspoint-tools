@@ -57,6 +57,73 @@ function generateCrc32Le(sequence) {
   return u32ToLeBytes(crc32(u32ToLeBytes(sequence), 0xFFFFFFFF));
 }
 
+// --- Firmware Image Validation ---
+
+const ESP_IMAGE_MAGIC = 0xE9;
+const IMG_HEADER_SIZE = 24;
+const IMG_SEG_HEADER_SIZE = 8;
+const IMG_SHA_TRAILER = 32;
+const IMG_CHECKSUM_SEED = 0xEF;
+// header[23] bit 0 = hash_appended; default IDF builds set it.
+const IMG_HASH_APPENDED_OFFSET = 23;
+
+// Walk the ESP image structure: 24-byte header, segCount segments each with an
+// 8-byte header + dataLen bytes, padding-to-16, 1-byte XOR checksum at
+// padEnd - 1, optional 32-byte SHA-256 over [0, totalSize - 32). Rejects HTML
+// error pages, truncated downloads, and wrong-shape binaries that would
+// otherwise pass the only previous check (a length range).
+//
+// Headroom-first arithmetic on every bound: `totalSize - pos < N`, never
+// `pos + N > totalSize`. Hostile dataLen = 0xFFFFFFFF wraps the addition form
+// into "valid" and admits a 4 GB read; the subtraction form catches it.
+export async function validateFirmwareImage(data) {
+  const totalSize = data.length;
+  if (totalSize < IMG_HEADER_SIZE) {
+    throw new Error('Firmware too small: header is truncated.');
+  }
+  if (data[0] !== ESP_IMAGE_MAGIC) {
+    throw new Error('Invalid firmware: ESP image magic byte (0xE9) missing. Are you sure this is a firmware .bin?');
+  }
+  const segCount = data[1];
+  const hashAppended = (data[IMG_HASH_APPENDED_OFFSET] & 0x01) !== 0;
+
+  let xorAccum = IMG_CHECKSUM_SEED;
+  let pos = IMG_HEADER_SIZE;
+  for (let i = 0; i < segCount; i++) {
+    if (totalSize - pos < IMG_SEG_HEADER_SIZE) {
+      throw new Error('Invalid firmware: segment header runs past end of file.');
+    }
+    const dataLen = leBytesToU32(data.subarray(pos + 4, pos + 8));
+    pos += IMG_SEG_HEADER_SIZE;
+    if (dataLen > totalSize - pos) {
+      throw new Error('Invalid firmware: segment data runs past end of file.');
+    }
+    const end = pos + dataLen;
+    for (let j = pos; j < end; j++) xorAccum ^= data[j];
+    pos = end;
+  }
+
+  // (pos + 16) & ~15 lands in [1, 16] bytes past pos; the byte at padEnd - 1
+  // holds the XOR-of-segment-data checksum.
+  const padEnd = (pos + 16) & ~15;
+  const expectedTotal = padEnd + (hashAppended ? IMG_SHA_TRAILER : 0);
+  if (expectedTotal !== totalSize) {
+    throw new Error(`Invalid firmware: declared size ${expectedTotal} does not match file size ${totalSize}.`);
+  }
+  const storedChecksum = data[padEnd - 1];
+  if ((xorAccum & 0xFF) !== storedChecksum) {
+    throw new Error(`Invalid firmware: segment checksum mismatch (computed 0x${(xorAccum & 0xFF).toString(16)}, stored 0x${storedChecksum.toString(16)}).`);
+  }
+  if (hashAppended) {
+    const body = data.subarray(0, totalSize - IMG_SHA_TRAILER);
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', body));
+    const stored = data.subarray(totalSize - IMG_SHA_TRAILER);
+    if (!isEqualBytes(digest, stored)) {
+      throw new Error('Invalid firmware: SHA-256 trailer mismatch. File is corrupt or truncated.');
+    }
+  }
+}
+
 // --- Partition Layouts ---
 
 export const X4_LAYOUT = {
@@ -284,6 +351,10 @@ export class CrossPointFlasher {
       skipReset ? 'Disconnect' : 'Reset device',
     ];
     const step = (idx, status) => { if (onStepChange) onStepChange(idx, steps[idx], status); };
+
+    // Image-shape gate before connect. A bad .bin (HTML error page, partial
+    // download, wrong-shape file) fails here without touching flash.
+    await validateFirmwareImage(firmwareData);
 
     step(0, 'running');
     await this.connect();
