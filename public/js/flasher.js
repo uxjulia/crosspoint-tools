@@ -124,6 +124,48 @@ export async function validateFirmwareImage(data) {
   }
 }
 
+// --- Known Partition Tables ---
+//
+// Reference layouts the debug page compares against. The flasher derives
+// its actual offsets from the device's PT (extractLayout), so these are not
+// load-bearing for OTA — they're labels used for diagnostics.
+
+export const X4_PARTITION_TABLE = [
+  { type: 'data-nvs', offset: 0x9000, size: 0x5000 },
+  { type: 'data-ota', offset: 0xe000, size: 0x2000 },
+  { type: 'app-ota_0', offset: 0x10000, size: 0x640000 },
+  { type: 'app-ota_1', offset: 0x650000, size: 0x640000 },
+  { type: 'data-spiffs', offset: 0xc90000, size: 0x360000 },
+  { type: 'data-coredump', offset: 0xff0000, size: 0x10000 },
+];
+
+export const X3_PARTITION_TABLE = [
+  { type: 'data-nvs', offset: 0x9000, size: 0x5000 },
+  { type: 'data-ota', offset: 0xe000, size: 0x2000 },
+  { type: 'app-ota_0', offset: 0x10000, size: 0x770000 },
+  { type: 'app-ota_1', offset: 0x780000, size: 0x770000 },
+  { type: 'data-spiffs', offset: 0xef0000, size: 0x100000 },
+  { type: 'data-coredump', offset: 0xff0000, size: 0x10000 },
+];
+
+export const CROSSPOINT_KO_PARTITION_TABLE = [
+  { type: 'data-nvs', offset: 0x9000, size: 0x5000 },
+  { type: 'data-ota', offset: 0xe000, size: 0x2000 },
+  { type: 'app-ota_0', offset: 0x10000, size: 0x6a0000 },
+  { type: 'app-ota_1', offset: 0x6b0000, size: 0x6a0000 },
+  { type: 'data-spiffs', offset: 0xd50000, size: 0x2a0000 },
+  { type: 'data-coredump', offset: 0xff0000, size: 0x10000 },
+];
+
+function matchesPartitionTable(actual, expected) {
+  return actual.length === expected.length &&
+    expected.every((exp, i) =>
+      actual[i].type === exp.type &&
+      actual[i].offset === exp.offset &&
+      actual[i].size === exp.size
+    );
+}
+
 // --- OTA Partition ---
 
 // IDF otadata format: exactly two 4 KB flash sectors, each holding one
@@ -222,7 +264,7 @@ const PARTITION_TYPES = {
   0x01: { 0x00: 'data-ota', 0x01: 'data-phy', 0x02: 'data-nvs', 0x03: 'data-coredump', 0x82: 'data-spiffs' },
 };
 
-function parsePartitionTable(data) {
+export function parsePartitionTable(data) {
   const partitions = [];
   for (let offset = 0; offset < data.length; offset += 32) {
     const chunk = data.slice(offset, offset + 32);
@@ -315,6 +357,18 @@ export class CrossPointFlasher {
     // is the whole table.
     const data = await this.espLoader.readFlash(0x8000, 0x1000);
     this.layout = extractLayout(parsePartitionTable(data));
+  }
+
+  // Diagnostic-only: returns the raw PT plus which known layout it matches.
+  // Does not set this.layout — flashFirmware calls readLayout() for that.
+  async readPartitionTable() {
+    const data = await this.espLoader.readFlash(0x8000, 0x1000);
+    const partitions = parsePartitionTable(data);
+    let matchedLayout = null;
+    if (matchesPartitionTable(partitions, X3_PARTITION_TABLE)) matchedLayout = 'X3';
+    else if (matchesPartitionTable(partitions, X4_PARTITION_TABLE)) matchedLayout = 'X4';
+    else if (matchesPartitionTable(partitions, CROSSPOINT_KO_PARTITION_TABLE)) matchedLayout = 'KO';
+    return { partitions, matchedLayout, raw: data };
   }
 
   // --- OTA Flash (firmware to backup partition) ---

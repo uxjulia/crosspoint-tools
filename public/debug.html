@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Debug - Crosspoint Tools</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['InterVariable', 'Inter', 'sans-serif'],
+            mono: ['"Geist Mono"', '"Courier New"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5f3',
+              500: '#4a7a62',
+              600: '#3d6652',
+              700: '#315243',
+            },
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="min-h-dvh bg-stone-50 font-sans">
+  <div class="mx-auto max-w-2xl px-6 py-12">
+    <div class="text-center">
+      <img src="/logo.png" alt="" class="mx-auto size-10 rounded-lg">
+      <h1 class="mt-4 text-xl font-semibold tracking-tight text-stone-900">Debug</h1>
+      <p class="mt-1 text-sm text-stone-400">Low-level tools for inspecting Xteink devices.</p>
+    </div>
+
+    <div class="mt-8 rounded-xl bg-white p-5 ring-1 ring-stone-950/5">
+      <h2 class="text-sm font-semibold text-stone-900">Read partition table</h2>
+      <p class="mt-1 text-xs text-stone-500">Connects to a device, reads the partition table at <code class="font-mono">0x8000</code>, and compares it against the known X3 and X4 layouts.</p>
+
+      <div class="mt-3 flex justify-end">
+        <button onclick="readPartitionTable()" id="read-btn"
+          class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed">
+          Connect &amp; read
+        </button>
+      </div>
+
+      <p id="status" class="mt-3 text-xs text-stone-500"></p>
+      <div id="result" class="mt-3"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { CrossPointFlasher, X3_PARTITION_TABLE, X4_PARTITION_TABLE, CROSSPOINT_KO_PARTITION_TABLE } from '/js/flasher.js';
+
+    const fmtHex = (n) => '0x' + n.toString(16).toUpperCase().padStart(6, '0');
+    const fmtSize = (n) => {
+      if (n >= 0x100000) return (n / 0x100000).toFixed(2) + ' MB';
+      if (n >= 0x400) return (n / 0x400).toFixed(1) + ' KB';
+      return n + ' B';
+    };
+
+    function renderTable(partitions, title, highlight = false) {
+      const rows = partitions.map(p => `
+        <tr class="border-t border-stone-100">
+          <td class="px-2 py-1 font-mono text-xs text-stone-700">${p.type}</td>
+          <td class="px-2 py-1 font-mono text-xs tabular-nums text-stone-500">${fmtHex(p.offset)}</td>
+          <td class="px-2 py-1 font-mono text-xs tabular-nums text-stone-500">${fmtHex(p.size)}</td>
+          <td class="px-2 py-1 text-xs text-stone-400">${fmtSize(p.size)}</td>
+        </tr>
+      `).join('');
+      const ring = highlight ? 'ring-2 ring-brand-500' : 'ring-1 ring-stone-200';
+      return `
+        <div class="rounded-lg bg-white ${ring} overflow-hidden">
+          <div class="bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-700">${title}</div>
+          <table class="w-full">
+            <thead>
+              <tr class="bg-stone-50/50 text-left text-xs font-medium text-stone-400">
+                <th class="px-2 py-1">Type</th>
+                <th class="px-2 py-1">Offset</th>
+                <th class="px-2 py-1">Size</th>
+                <th class="px-2 py-1"></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    window.readPartitionTable = async function () {
+      const btn = document.getElementById('read-btn');
+      const status = document.getElementById('status');
+      const result = document.getElementById('result');
+      result.innerHTML = '';
+      status.textContent = 'Requesting device...';
+
+      let port;
+      try {
+        port = await CrossPointFlasher.requestPort();
+      } catch (err) {
+        status.textContent = 'No device selected.';
+        return;
+      }
+
+      btn.disabled = true;
+      const flasher = new CrossPointFlasher(port);
+
+      try {
+        status.textContent = 'Connecting...';
+        await flasher.connect();
+        status.textContent = 'Reading partition table at 0x8000...';
+        const { partitions, matchedLayout } = await flasher.readPartitionTable();
+
+        const layoutMeta = {
+          X4: { name: 'Crosspoint', table: X4_PARTITION_TABLE },
+          X3: { name: 'Stock X3', table: X3_PARTITION_TABLE },
+          KO: { name: 'Crosspoint KO fork', table: CROSSPOINT_KO_PARTITION_TABLE },
+        };
+        const meta = matchedLayout ? layoutMeta[matchedLayout] : null;
+        const expectedTable = meta ? meta.table : X4_PARTITION_TABLE;
+        const expectedTableLabel = meta ? `${meta.name} layout` : 'No matching layout';
+
+        let badge;
+        if (matchedLayout === 'X4') {
+          badge = `<span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700"><span class="size-1.5 rounded-full bg-brand-500"></span>Crosspoint layout — ready to flash</span>`;
+        } else if (matchedLayout === 'KO') {
+          badge = `<span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700"><span class="size-1.5 rounded-full bg-brand-500"></span>Crosspoint KO fork layout — ready to flash</span>`;
+        } else if (matchedLayout === 'X3') {
+          badge = `<span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"><span class="size-1.5 rounded-full bg-amber-500"></span>Stock X3 layout — needs repartition before flashing Crosspoint</span>`;
+        } else {
+          badge = `<span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700"><span class="size-1.5 rounded-full bg-red-500"></span>Unknown layout (no match for Stock X3, Crosspoint, or KO fork)</span>`;
+        }
+
+        status.textContent = '';
+        result.innerHTML = `
+          <div class="mb-3">${badge}</div>
+          <div class="space-y-3">
+            ${renderTable(partitions, 'On-device partition table', true)}
+            ${renderTable(expectedTable, expectedTableLabel)}
+          </div>
+        `;
+      } catch (err) {
+        status.innerHTML = `<span class="text-red-600">${err.message || err}</span>`;
+      } finally {
+        try { await flasher.disconnect(true); } catch {}
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
