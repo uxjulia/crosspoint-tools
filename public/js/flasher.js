@@ -126,6 +126,12 @@ export async function validateFirmwareImage(data) {
 
 // --- OTA Partition ---
 
+// IDF otadata format: exactly two 4 KB flash sectors, each holding one
+// esp_ota_select_entry_t at byte 0. This is a protocol constant, not a
+// layout choice, so it's hardcoded rather than read from the PT.
+const OTA_SECTOR_BYTES = 0x1000;
+const OTADATA_BYTES = 2 * OTA_SECTOR_BYTES;
+
 const OTA_STATE = { NEW: 0, PENDING_VERIFY: 1, VALID: 2, INVALID: 3, ABORTED: 4, UNDEFINED: 0xFFFFFFFF };
 const INVALID_STATES = new Set([OTA_STATE.INVALID, OTA_STATE.ABORTED]);
 
@@ -169,9 +175,12 @@ function parseOtadata(data) {
     activeApp = (activeSeq - 1) % 2;
   }
   const inactiveApp = 1 - activeApp;
-  // For NUM_OTA_PARTITIONS == 2, active_seq + 1 always lands on inactiveApp;
-  // a >2 layout would need a scan-forward loop here.
-  const newSeq = activeSeq + 1;
+  // Smallest seq > activeSeq with (newSeq - 1) % 2 == inactiveApp. For an
+  // existing active entry this is always activeSeq + 1; for the no-eligible
+  // case (factory-fresh otadata, activeSeq = 0, activeApp = 0 by IDF
+  // default) it has to step to 2 so the bootloader picks inactiveApp = 1.
+  let newSeq = activeSeq + 1;
+  while (((newSeq - 1) % 2) !== inactiveApp) newSeq++;
   const targetSector = activeSector < 0 ? 0 : (1 - activeSector);
 
   return {
@@ -182,12 +191,16 @@ function parseOtadata(data) {
   };
 }
 
-function buildNewOtadata(existingData, targetSector, newSeq) {
-  const newData = new Uint8Array(existingData);
-  const offset = targetSector === 1 ? 0x1000 : 0;
-  newData.set(u32ToLeBytes(newSeq), offset);
-  newData.set(u32ToLeBytes(OTA_STATE.NEW), offset + 0x18);
-  newData.set(generateCrc32Le(newSeq), offset + 0x1C);
+// Builds the 4 KB target sector with the new entry stamped at byte 0. The
+// other sector is left untouched on flash so a power cut during the erase /
+// write window leaves the old (still-valid) entry as a fallback boot
+// pointer, instead of blanking both sectors and forcing the bootloader's
+// "no eligible otadata" default (app0).
+function buildNewOtadataSector(existingSectorData, newSeq) {
+  const newData = new Uint8Array(existingSectorData);
+  newData.set(u32ToLeBytes(newSeq), 0);
+  newData.set(u32ToLeBytes(OTA_STATE.NEW), 0x18);
+  newData.set(generateCrc32Le(newSeq), 0x1C);
   return newData;
 }
 
@@ -240,8 +253,8 @@ function extractLayout(partitions) {
   }
   if (!otadata) throw new Error('Partition table has no otadata partition.');
   if (!app0 || !app1) throw new Error('Partition table is missing an OTA app slot.');
-  if (otadata.size < 0x2000) {
-    throw new Error(`Partition table otadata is too small: ${otadata.size} bytes (need 0x2000).`);
+  if (otadata.size < OTADATA_BYTES) {
+    throw new Error(`Partition table otadata is too small: ${otadata.size} bytes (need ${OTADATA_BYTES}).`);
   }
   for (const p of [otadata, app0, app1]) {
     // end < off catches uint32 wrap on a hostile size = 0xFFFFFFFF.
@@ -252,7 +265,6 @@ function extractLayout(partitions) {
   }
   return {
     otadataOffset: otadata.offset,
-    otadataSize: otadata.size,
     appSlots: [
       { offset: app0.offset, size: app0.size },
       { offset: app1.offset, size: app1.size },
@@ -331,7 +343,7 @@ export class CrossPointFlasher {
     step(1, 'done');
 
     step(2, 'running');
-    const otaRaw = await this.espLoader.readFlash(this.layout.otadataOffset, this.layout.otadataSize, (_, p, t) => {
+    const otaRaw = await this.espLoader.readFlash(this.layout.otadataOffset, OTADATA_BYTES, (_, p, t) => {
       if (onProgress) onProgress('Read OTA data', p, t);
     });
     const ota = parseOtadata(otaRaw);
@@ -352,15 +364,17 @@ export class CrossPointFlasher {
     step(3, 'done');
 
     step(4, 'running');
-    const newOtadata = buildNewOtadata(otaRaw, ota.targetSector, ota.newSeq);
+    const sectorStart = ota.targetSector * OTA_SECTOR_BYTES;
+    const existingSector = otaRaw.subarray(sectorStart, sectorStart + OTA_SECTOR_BYTES);
+    const newSector = buildNewOtadataSector(existingSector, ota.newSeq);
     await this.espLoader.writeFlash({
-      fileArray: [{ data: this.espLoader.ui8ToBstr(newOtadata), address: this.layout.otadataOffset }],
+      fileArray: [{ data: this.espLoader.ui8ToBstr(newSector), address: this.layout.otadataOffset + sectorStart }],
       flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
       eraseAll: false, compress: true,
       reportProgress: (_, written, total) => { if (onProgress) onProgress('Update boot partition', written, total); },
     });
     const verifyOtadata = parseOtadata(
-      await this.espLoader.readFlash(this.layout.otadataOffset, this.layout.otadataSize)
+      await this.espLoader.readFlash(this.layout.otadataOffset, OTADATA_BYTES)
     );
     assertOtadataSwitch(verifyOtadata, ota.inactiveApp, ota.newSeq);
     step(4, 'done');
