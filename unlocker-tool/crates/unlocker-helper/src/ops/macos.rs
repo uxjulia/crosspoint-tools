@@ -12,6 +12,8 @@ use tokio::process::Command;
 const NAT_PLIST: &str = "/Library/Preferences/SystemConfiguration/com.apple.nat.plist";
 const NAT_PLIST_BACKUP: &str = "/var/db/com.sofriendly.crosspoint.unlocker.nat.plist.bak";
 const PF_RULES_PATH: &str = "/var/db/com.sofriendly.crosspoint.unlocker.pf.conf";
+const PREFS_PLIST: &str = "/Library/Preferences/SystemConfiguration/preferences.plist";
+const PREFS_PLIST_BACKUP: &str = "/var/db/com.sofriendly.crosspoint.unlocker.preferences.plist.bak";
 
 async fn sh(prog: &str, args: &[&str]) -> Result<String> {
     let out = Command::new(prog)
@@ -96,8 +98,105 @@ async fn remove_adhoc_upstream() {
         &["-removenetworkservice", ADHOC_SERVICE_NAME],
     )
     .await;
+    // networksetup refuses to remove the last service on lo0 ("you cannot
+    // remove ... because there aren't any other network services on
+    // Loopback"), leaving an orphaned entry in preferences.plist that the
+    // GUI can't delete either (System Settings crashes). Surgically remove
+    // any leftover entry from the plist directly.
+    if let Err(e) = purge_adhoc_from_prefs_plist().await {
+        tracing::warn!(?e, "failed to purge adhoc service from preferences.plist");
+    }
     restore_loopback().await;
     tracing::info!("removed adhoc upstream service");
+}
+
+/// Remove orphaned "Xteink Unlocker" entries from
+/// /Library/Preferences/SystemConfiguration/preferences.plist when
+/// `networksetup -removenetworkservice` couldn't.
+async fn purge_adhoc_from_prefs_plist() -> Result<()> {
+    use plist::Value;
+
+    if !Path::new(PREFS_PLIST).exists() {
+        return Ok(());
+    }
+
+    let bytes = tokio::fs::read(PREFS_PLIST).await?;
+    let mut root: Value = plist::from_bytes(&bytes).context("parse preferences.plist")?;
+
+    let root_dict = root
+        .as_dictionary_mut()
+        .ok_or_else(|| anyhow!("preferences.plist root is not a dictionary"))?;
+
+    // Find UUIDs of services whose UserDefinedName matches ours.
+    let mut victim_uuids: Vec<String> = Vec::new();
+    if let Some(services) = root_dict.get("NetworkServices").and_then(|v| v.as_dictionary()) {
+        for (uuid, svc) in services {
+            if let Some(name) = svc
+                .as_dictionary()
+                .and_then(|d| d.get("UserDefinedName"))
+                .and_then(|v| v.as_string())
+            {
+                if name == ADHOC_SERVICE_NAME {
+                    victim_uuids.push(uuid.clone());
+                }
+            }
+        }
+    }
+
+    if victim_uuids.is_empty() {
+        return Ok(());
+    }
+
+    // Back up once before mutating.
+    if !Path::new(PREFS_PLIST_BACKUP).exists() {
+        tokio::fs::copy(PREFS_PLIST, PREFS_PLIST_BACKUP).await.ok();
+    }
+
+    // Remove from NetworkServices.
+    if let Some(services) = root_dict
+        .get_mut("NetworkServices")
+        .and_then(|v| v.as_dictionary_mut())
+    {
+        for uuid in &victim_uuids {
+            services.remove(uuid);
+        }
+    }
+
+    // Remove references from each Set's Network.Service dict and ServiceOrder.
+    if let Some(sets) = root_dict.get_mut("Sets").and_then(|v| v.as_dictionary_mut()) {
+        for (_set_uuid, set_val) in sets.iter_mut() {
+            let Some(set_dict) = set_val.as_dictionary_mut() else { continue };
+            let Some(network) = set_dict.get_mut("Network").and_then(|v| v.as_dictionary_mut()) else {
+                continue;
+            };
+
+            if let Some(svc_dict) = network.get_mut("Service").and_then(|v| v.as_dictionary_mut()) {
+                for uuid in &victim_uuids {
+                    svc_dict.remove(uuid);
+                }
+            }
+
+            if let Some(global) = network.get_mut("Global").and_then(|v| v.as_dictionary_mut()) {
+                if let Some(order) = global.get_mut("ServiceOrder").and_then(|v| v.as_array_mut()) {
+                    order.retain(|item| {
+                        item.as_string()
+                            .map(|s| !victim_uuids.iter().any(|u| u == s))
+                            .unwrap_or(true)
+                    });
+                }
+            }
+        }
+    }
+
+    let mut buf = Vec::new();
+    plist::to_writer_xml(&mut buf, &root).context("serialize preferences.plist")?;
+    tokio::fs::write(PREFS_PLIST, buf).await?;
+
+    tracing::info!(
+        count = victim_uuids.len(),
+        "purged orphaned Xteink Unlocker entries from preferences.plist"
+    );
+    Ok(())
 }
 
 async fn wifi_device() -> Result<String> {
