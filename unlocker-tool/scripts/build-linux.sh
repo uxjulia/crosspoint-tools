@@ -60,10 +60,15 @@ echo "==> Ensuring rust target x86_64-unknown-linux-gnu"
 rustup target add x86_64-unknown-linux-gnu >/dev/null
 
 # ── Build the helper ──
-echo "==> Building unlocker-helper (release, x86_64-unknown-linux-gnu)"
-cargo build --release --target x86_64-unknown-linux-gnu -p unlocker-helper
+# No --target: tauri.linux.conf.json bundles the helper from
+# ../../target/release/unlocker-helper (i.e. the default, un-prefixed target
+# dir). Building with --target x86_64-unknown-linux-gnu places it under
+# target/<triple>/release/ instead, which the bundler can't find. The Linux
+# runner is already x86_64 Linux so the default target matches.
+echo "==> Building unlocker-helper (release)"
+cargo build --release -p unlocker-helper
 
-HELPER_BIN_SRC="${REPO_ROOT}/target/x86_64-unknown-linux-gnu/release/unlocker-helper"
+HELPER_BIN_SRC="${REPO_ROOT}/target/release/unlocker-helper"
 [[ -x "${HELPER_BIN_SRC}" ]] || { echo "helper binary missing: ${HELPER_BIN_SRC}" >&2; exit 1; }
 file "${HELPER_BIN_SRC}"
 
