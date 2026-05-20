@@ -76,6 +76,17 @@ The browser-based flasher (`public/js/flasher.js`) uses [esptool-js](https://git
 3. Writes firmware to the backup OTA partition
 4. Updates the OTA boot selector to swap partitions on next boot
 
+## Debug page
+
+`/debug` is a diagnostic tool for inspecting a device over WebSerial without flashing anything. It connects to the ESP32-C3, reads the partition table, and reports whether the layout matches a known profile:
+
+- **CrossPoint** — X4 CrossPoint layout, ready to flash
+- **CrossPoint KO fork** — KO community fork layout, ready to flash
+- **Stock X3** — Needs repartition before CrossPoint can be flashed
+- **Unknown** — No match; the raw table is shown for inspection
+
+Useful when a user reports a flash failure or unexpected behavior — ask them to load `/debug`, connect the device, and share the layout badge and dumped partition entries.
+
 ## Setup
 
 ### Prerequisites
