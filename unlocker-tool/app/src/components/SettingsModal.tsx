@@ -110,7 +110,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             {isWindows()
               ? "If Unlocker was closed mid-session and Mobile Hotspot or Wi-Fi routing stopped working, run a cleanup pass to tear down Unlocker-managed network changes. Safe to run any time."
               : isMac()
-              ? "If Unlocker was closed mid-session and localhost or Wi-Fi routing stopped working, run a cleanup pass to restore loopback and tear down Unlocker-managed network changes. Safe to run any time."
+              ? "If Unlocker was closed mid-session and localhost or Wi-Fi routing stopped working, run a cleanup pass to restore loopback and tear down Unlocker-managed network changes. Safe to run any time. After it finishes, restart your Mac to fully remove the temporary \"Xteink Unlocker\" entry from System Settings → Network."
               : isLinux()
               ? "If Unlocker was closed mid-session and localhost or Wi-Fi routing stopped working, run a cleanup pass to restore loopback and tear down Unlocker-managed network changes. Safe to run any time."
               : "Don't know what your system is, please report this..."
