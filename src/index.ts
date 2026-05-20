@@ -404,7 +404,7 @@ async function handleManualTrigger(
 
   // Dispatch the GitHub Actions workflow
   const ghRes = await fetch(
-    'https://api.github.com/repos/SoFriendly/crosspoint-tools/actions/workflows/build-firmware.yml/dispatches',
+    'https://api.github.com/repos/crosspoint-reader/crosspoint-tools/actions/workflows/build-firmware.yml/dispatches',
     {
       method: 'POST',
       headers: {
@@ -1097,7 +1097,7 @@ async function handleCustomBuildUpload(
 
   // Dispatch GitHub Actions workflow
   const ghRes = await fetch(
-    'https://api.github.com/repos/SoFriendly/crosspoint-tools/actions/workflows/build-custom-firmware.yml/dispatches',
+    'https://api.github.com/repos/crosspoint-reader/crosspoint-tools/actions/workflows/build-custom-firmware.yml/dispatches',
     {
       method: 'POST',
       headers: {
@@ -1409,7 +1409,7 @@ async function handleFontBuildUpload(
   await env.BUILD_META.put(`font-build:${buildId}`, JSON.stringify(meta));
 
   const ghRes = await fetch(
-    'https://api.github.com/repos/SoFriendly/crosspoint-tools/actions/workflows/build-fonts.yml/dispatches',
+    'https://api.github.com/repos/crosspoint-reader/crosspoint-tools/actions/workflows/build-fonts.yml/dispatches',
     {
       method: 'POST',
       headers: {
