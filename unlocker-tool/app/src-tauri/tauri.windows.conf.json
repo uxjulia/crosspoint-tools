@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["nsis", "msi"],
+    "resources": {
+      "../../target/release/unlocker-helper.exe": "unlocker-helper.exe"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "certificateThumbprint": "787CDD912B4931BCA3D53D4CEE69BE1D9D5BA209",
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.sectigo.com"
+    }
+  }
+}

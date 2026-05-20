@@ -1,0 +1,12 @@
+name = "unlocker-releases"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+# account_id read from CLOUDFLARE_ACCOUNT_ID env var (set in .env.local)
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "unlocker-releases"
+
+[[routes]]
+pattern = "unlocker-releases.crosspointreader.com"
+custom_domain = true

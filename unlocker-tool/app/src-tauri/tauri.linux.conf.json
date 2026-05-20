@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["appimage", "deb", "rpm"],
+    "resources": [
+      "../../target/x86_64-unknown-linux-gnu/release/unlocker-helper"
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1",
+          "policykit-1"
+        ]
+      }
+    }
+  }
+}

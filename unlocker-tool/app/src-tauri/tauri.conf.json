@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Xteink Unlocker",
+  "version": "0.2.16",
+  "identifier": "com.sofriendly.crosspoint.unlocker",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Xteink Unlocker",
+        "width": 960,
+        "height": 820,
+        "minWidth": 800,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://unlocker-releases.crosspointreader.com/latest-{{target}}-{{arch}}.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY1RDVFOTA2OTQzN0NCMTkKUldRWnl6ZVVCdW5WOVpyaHR0anNZRm5jNlBEaFk3WWJvbkpSdDdxbC9XSmQ5N0pZcitGK1d5YUMK"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Install CrossPoint Reader on USB-locked Xteink devices",
+    "longDescription": "Xteink Unlocker installs CrossPoint Reader by intercepting your device's own OTA update mechanism. The only path for devices where USB flashing is locked.",
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "minimumSystemVersion": "12.0",
+      "exceptionDomain": null,
+      "frameworks": [],
+      "signingIdentity": null,
+      "providerShortName": "2H66PPM438"
+    },
+    "resources": []
+  }
+}

@@ -1,0 +1,28 @@
+[package]
+name = "unlocker-helper"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "unlocker-helper"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+unlocker-core = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+plist = "1.7"
+
+[target.'cfg(windows)'.build-dependencies]
+embed-manifest = "1.4"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5", default-features = false, features = ["tokio"] }

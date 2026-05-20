@@ -1,0 +1,42 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/unlocker-core",
+    "crates/unlocker-helper",
+    "app/src-tauri",
+]
+
+[workspace.package]
+version = "0.2.16"
+edition = "2021"
+license = "MIT"
+authors = ["CrossPoint Reader"]
+repository = "https://github.com/crosspoint-reader/xteink-unlocker"
+
+[workspace.dependencies]
+tokio = { version = "1.52", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+axum = "0.8"
+tower = "0.5"
+hickory-server = "0.26"
+hickory-resolver = "0.26"
+hickory-proto = "0.26"
+rcgen = { version = "0.14", features = ["x509-parser"] }
+rustls = "0.23"
+rustls-pemfile = "2"
+reqwest = { version = "0.13", features = ["json", "stream", "rustls"] }
+sha2 = "0.10"
+hex = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+toml = "1"
+dirs = "6"
+bytes = "1"
+futures = "0.3"
+
+unlocker-core = { path = "crates/unlocker-core" }

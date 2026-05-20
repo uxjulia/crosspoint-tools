@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- We are not sandboxed: we manage system network state and talk to a
+         privileged helper over a Unix domain socket. App Store distribution
+         is not a goal (see spec §12.1). -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- Allow outbound HTTP for the catalog and firmware downloads. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+</dict>
+</plist>

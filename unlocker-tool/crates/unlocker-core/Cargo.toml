@@ -1,0 +1,39 @@
+[package]
+name = "unlocker-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+axum = { workspace = true }
+hickory-server = { workspace = true }
+hickory-resolver = { workspace = true }
+hickory-proto = { workspace = true }
+rcgen = { workspace = true }
+rustls = { workspace = true }
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+dirs = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+tokio-util = { version = "0.7", features = ["io"] }
+tokio-rustls = "0.26"
+axum-server = { version = "0.8", features = ["tls-rustls"] }
+rustls-pemfile = { workspace = true }
+x509-parser = "0.18"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+] }
