@@ -307,7 +307,12 @@ async function handleBuildSummary(
     }
   }
 
-  const changesText = changeDescriptions.join('\n\n');
+  // Cap input at ~60K chars (~15K tokens) to stay safely under the 24K model context limit
+  const MAX_CHARS = 60000;
+  let changesText = changeDescriptions.join('\n\n');
+  if (changesText.length > MAX_CHARS) {
+    changesText = changesText.slice(0, MAX_CHARS) + '\n\n[…truncated]';
+  }
 
   // Step 3: Generate summary from PR content
   const response = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
