@@ -89,6 +89,13 @@ RPM=$(find target/x86_64-unknown-linux-gnu/release/bundle/rpm -name "*.rpm" -typ
 
 [[ -f "${APPIMAGE}" ]] || { echo "no AppImage produced" >&2; exit 1; }
 
+if [[ -n "${DEB}" ]]; then
+    if ! dpkg-deb -c "${DEB}" | grep -q '/unlocker-helper$'; then
+        echo "Debian package is missing bundled unlocker-helper" >&2
+        exit 1
+    fi
+fi
+
 echo
 echo "Linux build complete."
 echo "  AppImage:        ${APPIMAGE}"

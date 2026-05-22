@@ -167,7 +167,7 @@ Output:
 
 ### Privileged helper at runtime
 
-The Tauri shell launches `unlocker-helper` via `pkexec`, which gives the user the standard PolicyKit graphical password prompt — the Linux equivalent of the macOS osascript / Windows UAC prompt. No polkit `.policy` file required (pkexec falls back to `auth_admin_keep`).
+The Debian package depends on `pkexec` and `polkitd`, not the obsolete transitional `policykit-1` package. The Tauri shell launches a short root shell via `pkexec`, which gives the user the standard PolicyKit graphical password prompt — the Linux equivalent of the macOS osascript / Windows UAC prompt. That shell starts `unlocker-helper` in the background and exits so the app can continue to the RPC readiness check. No polkit `.policy` file required (pkexec falls back to `auth_admin_keep`).
 
 ### Auto-update caveat
 

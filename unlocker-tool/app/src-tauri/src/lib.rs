@@ -196,11 +196,45 @@ fn helper_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     if let Some(p) = helper_path_override() {
         return Ok(p);
     }
-    Ok(app
+    let resource_helper = app
         .path()
         .resource_dir()
         .map_err(|e| e.to_string())?
-        .join("unlocker-helper"))
+        .join("unlocker-helper");
+    if resource_helper.exists() {
+        return Ok(resource_helper);
+    }
+
+    let mut candidates = vec![resource_helper];
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join("unlocker-helper"));
+        }
+    }
+
+    for dir in [
+        "/usr/lib/Xteink Unlocker",
+        "/usr/lib/xteink-unlocker",
+        "/usr/lib/unlocker-app",
+        "/usr/lib/com.sofriendly.crosspoint.unlocker",
+        "/opt/Xteink Unlocker",
+    ] {
+        candidates.push(std::path::Path::new(dir).join("unlocker-helper"));
+    }
+
+    if let Some(found) = candidates.iter().find(|p| p.exists()) {
+        return Ok(found.clone());
+    }
+
+    let checked = candidates
+        .iter()
+        .map(|p| format!("  - {}", p.display()))
+        .collect::<Vec<_>>()
+        .join("\n");
+    Err(format!(
+        "helper not found. Checked these locations:\n{checked}"
+    ))
 }
 
 #[tauri::command]
@@ -297,11 +331,21 @@ async fn install_helper(app: AppHandle) -> Result<(), String> {
         let perms = std::fs::Permissions::from_mode(0o755);
         std::fs::set_permissions(&helper_path, perms).map_err(|e| e.to_string())?;
 
-        let path_str = helper_path.to_str().ok_or("non-utf8 helper path")?;
+        let path_str = shell_quote(&helper_path.to_string_lossy());
 
-        // Use pkexec for the GUI Linux admin prompt.
+        // Use pkexec for the GUI Linux admin prompt. The helper is a
+        // long-running RPC server, so pkexec starts a short root shell that
+        // launches the helper in the background and then exits.
+        let script = format!(
+            "pkill -TERM -x unlocker-helper 2>/dev/null || true; \
+             sleep 0.2; \
+             pkill -KILL -x unlocker-helper 2>/dev/null || true; \
+             echo \"[$(date +%H:%M:%S)] install_helper as $(whoami), launching {path_str}\" >>/tmp/unlocker-helper.stdout; \
+             {path_str} </dev/null >>/tmp/unlocker-helper.stdout 2>&1 & \
+             echo \"[$(date +%H:%M:%S)] backgrounded pid=$!\" >>/tmp/unlocker-helper.stdout"
+        );
         let status = tokio::process::Command::new("/usr/bin/pkexec")
-            .args([path_str])
+            .args(["/bin/sh", "-c", &script])
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
             .spawn()
@@ -423,6 +467,11 @@ fn tail_lines(s: &str, n: usize) -> String {
     let lines: Vec<&str> = s.lines().collect();
     let start = lines.len().saturating_sub(n);
     lines[start..].join("\n")
+}
+
+#[cfg(target_os = "linux")]
+fn shell_quote(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "'\\''"))
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

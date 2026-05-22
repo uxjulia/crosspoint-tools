@@ -71,6 +71,8 @@ When the orchestrator needs the helper, the app shells out to `osascript` with a
 
 On Windows the equivalent is a UAC prompt: the app calls `Start-Process -Verb RunAs` to launch `unlocker-helper.exe`, which carries a `requireAdministrator` manifest. The RPC channel is a named pipe at `\\.\pipe\com.sofriendly.crosspoint.unlocker.helper` instead of a Unix socket.
 
+On Linux the app uses `pkexec` to authorize a short root shell trampoline. That shell kills any stale helper, starts the bundled `unlocker-helper` in the background, and exits so the unprivileged app can connect to the helper's Unix socket.
+
 ## Windows
 
 Windows uses Mobile Hotspot (`NetworkOperatorTetheringManager`) for AP + NAT + DHCP in one step — no equivalent of macOS's "enable Internet Sharing in System Settings" handoff. The host always lands at `192.168.137.1` and clients are on `192.168.137.0/24`. Device discovery scans the system ARP table under that subnet rather than reading a `dhcpd_leases` file.
@@ -85,6 +87,7 @@ Requirements:
 The helper writes a verbose log of every DNS query, every HTTP/HTTPS request, and every state transition. This is the primary tool for diagnosing OTA failures and noticing when firmware OEMs change their API shape.
 
 - **macOS:** `/tmp/unlocker-helper.log`
+- **Linux:** `/tmp/unlocker-helper.log` and `/tmp/unlocker-helper.stdout`
 - **Windows:** `C:\ProgramData\CrossPoint\unlocker-helper\unlocker-helper.log`
 
 The file is overwritten on each helper launch. Bump verbosity by setting `RUST_LOG=unlocker_core=debug,unlocker_helper=debug` in the environment that launches the app.
