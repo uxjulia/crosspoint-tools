@@ -1055,27 +1055,29 @@
       <h2 class="mt-3 max-w-[32ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance sm:text-4xl">CrossPoint community shots.</h2>
     </div>
     <div class="marquee mt-10">
-      <div class="marquee-track" aria-hidden="true">
-        <!-- Original set -->
-        <div class="marquee-item"><img src="/community/1.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/2.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/3.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/4.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/5.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/6.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/7.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/8.webp" alt="" loading="lazy"></div>
-        <!-- Duplicate set (required for seamless loop) -->
-        <div class="marquee-item"><img src="/community/1.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/2.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/3.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/4.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/5.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/6.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/7.webp" alt="" loading="lazy"></div>
-        <div class="marquee-item"><img src="/community/8.webp" alt="" loading="lazy"></div>
-      </div>
+      <div class="marquee-track" aria-hidden="true" data-community-marquee data-count="8"></div>
     </div>
+    <script>
+      (function () {
+        var track = document.querySelector('[data-community-marquee]');
+        if (!track) return;
+        var count = parseInt(track.getAttribute('data-count'), 10) || 0;
+        var order = [];
+        for (var i = 1; i <= count; i++) order.push(i);
+        for (var j = order.length - 1; j > 0; j--) {
+          var k = Math.floor(Math.random() * (j + 1));
+          var tmp = order[j]; order[j] = order[k]; order[k] = tmp;
+        }
+        var html = '';
+        // Duplicate set (required for seamless loop)
+        for (var pass = 0; pass < 2; pass++) {
+          for (var n = 0; n < order.length; n++) {
+            html += '<div class="marquee-item"><img src="/community/' + order[n] + '.webp" alt="" loading="lazy"></div>';
+          }
+        }
+        track.innerHTML = html;
+      })();
+    </script>
   </section>
 
   <!-- Unlock Tool CTA -->
