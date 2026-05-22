@@ -461,10 +461,12 @@ async fn github_releases_latest(
     Json(build_release(&cfg, &repo))
 }
 
-/// Spoofs `GET /repos/{owner}/{repo}/releases` — returns an array of releases.
-/// The Inx fork of CrossPoint queries this list endpoint (not `/latest`),
-/// iterates the array, and picks an asset. Return a single-element array
-/// with the same release payload `/latest` would return.
+/// Spoofs `GET /repos/{owner}/{repo}/releases`.
+///
+/// INX 1.0.12 queries this list endpoint, but its parser treats the body as a
+/// single release object instead of GitHub's normal release array. Return the
+/// object shape for INX so those builds can advance to the confirmation screen.
+/// Other GitHub-shaped firmwares get the normal single-element array.
 async fn github_releases_list(
     State(cfg): State<Arc<ServerConfig>>,
     AxPath((owner, repo)): AxPath<(String, String)>,
@@ -478,7 +480,12 @@ async fn github_releases_list(
     );
 
     cfg.on_manifest_request.notify_one();
-    Json(serde_json::Value::Array(vec![build_release(&cfg, &repo)]))
+    let release = build_release(&cfg, &repo);
+    if repo.eq_ignore_ascii_case("inx") {
+        Json(release)
+    } else {
+        Json(serde_json::Value::Array(vec![release]))
+    }
 }
 
 fn build_release(cfg: &ServerConfig, repo: &str) -> serde_json::Value {
