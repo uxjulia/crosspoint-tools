@@ -715,13 +715,18 @@ async fn run_local_install(
     // EPERM, gets mapped to 404, and the device's OTA dies with no log trail.
     let cached_path = match catalog::cached_path(&sha)? {
         Some(p) if catalog::verify_file(&p, &sha).unwrap_or(false) => {
-            log.push("info", "local firmware already in cache", None).await;
+            log.push("info", "local firmware already in cache", None)
+                .await;
             p
         }
         _ => {
             let dest = catalog::cache_dir()?.join(format!("{sha}.bin"));
             tokio::fs::copy(&path, &dest).await.map_err(|e| {
-                anyhow::anyhow!("failed to copy {} -> {}: {e}", path.display(), dest.display())
+                anyhow::anyhow!(
+                    "failed to copy {} -> {}: {e}",
+                    path.display(),
+                    dest.display()
+                )
             })?;
             log.push(
                 "info",
@@ -764,8 +769,10 @@ async fn run_prepared_install(
     // ── Hotspot ──
     orch.transition(OrchState::SettingUpHotspot, None).await;
     // Fixed creds: the user has to type the PSK on the Xteink keyboard, so a
-    // randomized one is hostile UX. The hotspot is short-lived and on-demand.
-    let ssid = "xteink".to_string();
+    // Keep this stable for UX, but avoid "xteink": CH stock firmware appears
+    // to reserve that namespace for its own app-connect/provisioning paths and
+    // may refuse to associate with a normal station network using that SSID.
+    let ssid = "crosspoint".to_string();
     let psk = "11111111".to_string();
     let hotspot_label = if cfg!(target_os = "windows") {
         "Mobile Hotspot"
@@ -865,7 +872,8 @@ async fn run_prepared_install(
     } else {
         "Check your device, then clean up the network on this Mac."
     };
-    orch.transition(OrchState::Done, Some(done_msg.into())).await;
+    orch.transition(OrchState::Done, Some(done_msg.into()))
+        .await;
 
     Ok(())
 }
@@ -934,10 +942,7 @@ async fn cancel(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn repair_system(
-    app: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+async fn repair_system(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     state
         .log
         .push("warn", "running network repair and loopback restore", None)

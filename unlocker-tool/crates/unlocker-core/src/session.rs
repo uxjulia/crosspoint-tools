@@ -23,7 +23,12 @@ impl SessionLog {
         self.tx.subscribe()
     }
 
-    pub async fn push(&self, level: &str, message: impl Into<String>, data: Option<serde_json::Value>) {
+    pub async fn push(
+        &self,
+        level: &str,
+        message: impl Into<String>,
+        data: Option<serde_json::Value>,
+    ) {
         let entry = LogEntry {
             ts: chrono::Utc::now().to_rfc3339(),
             level: level.to_string(),

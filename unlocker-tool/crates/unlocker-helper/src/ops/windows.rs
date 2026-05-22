@@ -295,7 +295,9 @@ if ($adapter) { Write-Output $adapter.IPAddress } else { Write-Output 'none' }
     let out = run_powershell(script).await?;
     let ip = out.trim();
     if ip == "none" || ip.is_empty() {
-        return Err(anyhow!("hotspot adapter not yet present (192.168.137.0/24)"));
+        return Err(anyhow!(
+            "hotspot adapter not yet present (192.168.137.0/24)"
+        ));
     }
     Ok(ip.to_string())
 }
@@ -422,7 +424,10 @@ Interface: 10.0.0.5 --- 0xb
 
     #[test]
     fn parse_arp_returns_empty_when_bridge_unknown() {
-        let leases = parse_arp_output("Interface: 192.168.137.1\n  192.168.137.5 aa-bb static\n", None);
+        let leases = parse_arp_output(
+            "Interface: 192.168.137.1\n  192.168.137.5 aa-bb static\n",
+            None,
+        );
         assert!(leases.is_empty());
     }
 

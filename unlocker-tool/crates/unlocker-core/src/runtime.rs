@@ -26,12 +26,7 @@ impl Runtime {
     /// Phase 1: create the temporary lo0-backed upstream service and write the
     /// Internet Sharing NAT plist.
     /// After this the user must enable Internet Sharing in System Settings.
-    pub async fn prepare_hotspot(
-        &self,
-        helper: &Helper,
-        ssid: &str,
-        psk: &str,
-    ) -> Result<()> {
+    pub async fn prepare_hotspot(&self, helper: &Helper, ssid: &str, psk: &str) -> Result<()> {
         helper.is_enable(ssid, psk).await?;
         Ok(())
     }

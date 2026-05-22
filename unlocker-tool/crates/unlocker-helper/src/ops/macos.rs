@@ -129,7 +129,10 @@ async fn purge_adhoc_from_prefs_plist() -> Result<()> {
 
     // Find UUIDs of services whose UserDefinedName matches ours.
     let mut victim_uuids: Vec<String> = Vec::new();
-    if let Some(services) = root_dict.get("NetworkServices").and_then(|v| v.as_dictionary()) {
+    if let Some(services) = root_dict
+        .get("NetworkServices")
+        .and_then(|v| v.as_dictionary())
+    {
         for (uuid, svc) in services {
             if let Some(name) = svc
                 .as_dictionary()
@@ -163,21 +166,38 @@ async fn purge_adhoc_from_prefs_plist() -> Result<()> {
     }
 
     // Remove references from each Set's Network.Service dict and ServiceOrder.
-    if let Some(sets) = root_dict.get_mut("Sets").and_then(|v| v.as_dictionary_mut()) {
+    if let Some(sets) = root_dict
+        .get_mut("Sets")
+        .and_then(|v| v.as_dictionary_mut())
+    {
         for (_set_uuid, set_val) in sets.iter_mut() {
-            let Some(set_dict) = set_val.as_dictionary_mut() else { continue };
-            let Some(network) = set_dict.get_mut("Network").and_then(|v| v.as_dictionary_mut()) else {
+            let Some(set_dict) = set_val.as_dictionary_mut() else {
+                continue;
+            };
+            let Some(network) = set_dict
+                .get_mut("Network")
+                .and_then(|v| v.as_dictionary_mut())
+            else {
                 continue;
             };
 
-            if let Some(svc_dict) = network.get_mut("Service").and_then(|v| v.as_dictionary_mut()) {
+            if let Some(svc_dict) = network
+                .get_mut("Service")
+                .and_then(|v| v.as_dictionary_mut())
+            {
                 for uuid in &victim_uuids {
                     svc_dict.remove(uuid);
                 }
             }
 
-            if let Some(global) = network.get_mut("Global").and_then(|v| v.as_dictionary_mut()) {
-                if let Some(order) = global.get_mut("ServiceOrder").and_then(|v| v.as_array_mut()) {
+            if let Some(global) = network
+                .get_mut("Global")
+                .and_then(|v| v.as_dictionary_mut())
+            {
+                if let Some(order) = global
+                    .get_mut("ServiceOrder")
+                    .and_then(|v| v.as_array_mut())
+                {
                     order.retain(|item| {
                         item.as_string()
                             .map(|s| !victim_uuids.iter().any(|u| u == s))

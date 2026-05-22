@@ -73,10 +73,7 @@ mod imp {
         ) -> Poll<std::io::Result<usize>> {
             Pin::new(&mut self.0).poll_write(cx, buf)
         }
-        fn poll_flush(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-        ) -> Poll<std::io::Result<()>> {
+        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
             Pin::new(&mut self.0).poll_flush(cx)
         }
         fn poll_shutdown(
@@ -197,10 +194,8 @@ mod imp {
             // Spin up the next instance immediately so the next client can
             // connect while we're servicing this one. Same DACL.
             let next = unsafe {
-                ServerOptions::new().create_with_security_attributes_raw(
-                    &self.endpoint,
-                    self.security.as_ptr(),
-                )?
+                ServerOptions::new()
+                    .create_with_security_attributes_raw(&self.endpoint, self.security.as_ptr())?
             };
             *guard = Some(next);
             Ok(Stream::Server(server))
@@ -255,10 +250,7 @@ mod imp {
                 Stream::Client(c) => Pin::new(c).poll_write(cx, buf),
             }
         }
-        fn poll_flush(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-        ) -> Poll<std::io::Result<()>> {
+        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
             match &mut *self {
                 Stream::Server(s) => Pin::new(s).poll_flush(cx),
                 Stream::Client(c) => Pin::new(c).poll_flush(cx),

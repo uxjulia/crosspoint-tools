@@ -482,7 +482,6 @@ async fn github_releases_list(
 }
 
 fn build_release(cfg: &ServerConfig, repo: &str) -> serde_json::Value {
-
     // Serve the firmware over plain HTTP rather than HTTPS. Two reasons:
     //
     // 1. On memory-constrained devices (X3 in particular) `esp_https_ota_begin`

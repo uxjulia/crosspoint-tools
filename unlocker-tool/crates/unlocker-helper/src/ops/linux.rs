@@ -87,10 +87,9 @@ async fn wifi_device_path(conn: &zbus::Connection) -> Result<OwnedObjectPath> {
         .context("NM.GetDevices")?;
 
     for dev_path in devices {
-        let dev_proxy =
-            zbus::Proxy::new(conn, NM_BUS, dev_path.as_str(), NM_DEVICE_IFACE)
-                .await
-                .context("device proxy")?;
+        let dev_proxy = zbus::Proxy::new(conn, NM_BUS, dev_path.as_str(), NM_DEVICE_IFACE)
+            .await
+            .context("device proxy")?;
 
         let dev_type: u32 = match dev_proxy.get_property("DeviceType").await {
             Ok(t) => t,
@@ -120,7 +119,7 @@ type ConnDict<'a> = HashMap<&'a str, Inner<'a>>;
 fn build_hotspot_connection<'a>(ssid: &'a str, psk: &'a str) -> ConnDict<'a> {
     let mut connection: Inner = HashMap::new();
     connection.insert("type", Value::from("802-11-wireless"));
-    connection.insert("id",   Value::from(CONN_ID));
+    connection.insert("id", Value::from(CONN_ID));
     connection.insert("uuid", Value::from(CONN_UUID));
     connection.insert("autoconnect", Value::from(false));
 
@@ -133,7 +132,7 @@ fn build_hotspot_connection<'a>(ssid: &'a str, psk: &'a str) -> ConnDict<'a> {
 
     let mut security: Inner = HashMap::new();
     security.insert("key-mgmt", Value::from("wpa-psk"));
-    security.insert("psk",      Value::from(psk));
+    security.insert("psk", Value::from(psk));
 
     let mut ipv4: Inner = HashMap::new();
     // "shared" tells NM to run dnsmasq for DHCP and configure NAT.
@@ -143,11 +142,11 @@ fn build_hotspot_connection<'a>(ssid: &'a str, psk: &'a str) -> ConnDict<'a> {
     ipv6.insert("method", Value::from("ignore"));
 
     let mut map: ConnDict = HashMap::new();
-    map.insert("connection",              connection);
-    map.insert("802-11-wireless",         wireless);
+    map.insert("connection", connection);
+    map.insert("802-11-wireless", wireless);
     map.insert("802-11-wireless-security", security);
-    map.insert("ipv4",                    ipv4);
-    map.insert("ipv6",                    ipv6);
+    map.insert("ipv4", ipv4);
+    map.insert("ipv6", ipv6);
     map
 }
 
@@ -159,9 +158,7 @@ async fn remove_stale_hotspot(conn: &zbus::Connection) {
         return;
     };
 
-    let Ok(connections): Result<Vec<OwnedObjectPath>, _> = proxy
-        .call("ListConnections", &())
-        .await
+    let Ok(connections): Result<Vec<OwnedObjectPath>, _> = proxy.call("ListConnections", &()).await
     else {
         return;
     };
@@ -222,18 +219,15 @@ pub async fn is_enable(ssid: &str, psk: &str) -> Result<()> {
     let wifi = wifi_device_path(&dbus).await?;
 
     // Add the new connection profile.
-    let settings_proxy =
-        zbus::Proxy::new(&dbus, NM_BUS, NM_SETTINGS_PATH, NM_SETTINGS_IFACE)
-            .await
-            .context("settings proxy")?;
+    let settings_proxy = zbus::Proxy::new(&dbus, NM_BUS, NM_SETTINGS_PATH, NM_SETTINGS_IFACE)
+        .await
+        .context("settings proxy")?;
 
     let conn_dict = build_hotspot_connection(ssid, psk);
     let conn_path: OwnedObjectPath = settings_proxy
         .call("AddConnection", &conn_dict)
         .await
-        .map_err(|e| {
-            anyhow::anyhow!("NM.Settings.AddConnection: {e:#}")
-        })?;
+        .map_err(|e| anyhow::anyhow!("NM.Settings.AddConnection: {e:#}"))?;
     tracing::info!(%conn_path, "hotspot connection profile added");
 
     // Activate the connection on the Wi-Fi device.
@@ -251,12 +245,14 @@ pub async fn is_enable(ssid: &str, psk: &str) -> Result<()> {
     let _: OwnedObjectPath = nm_proxy
         .call(
             "ActivateConnection",
-            &(conn_path.as_ref() as ObjectPath<'_>, wifi.as_ref() as ObjectPath<'_>, specific),
+            &(
+                conn_path.as_ref() as ObjectPath<'_>,
+                wifi.as_ref() as ObjectPath<'_>,
+                specific,
+            ),
         )
         .await
-        .map_err(|e| {
-            anyhow::anyhow!("NM.ActivateConnection: {e:#}")
-        })?;
+        .map_err(|e| anyhow::anyhow!("NM.ActivateConnection: {e:#}"))?;
 
     state::mutate(|s| s.internet_sharing_active = true).await?;
     tracing::info!(%ssid, "Wi-Fi hotspot activated via NetworkManager");
@@ -308,10 +304,20 @@ async fn try_iptables_add(bridge_ip: &str, from_port: u16, to_port: u16) -> Resu
     sh(
         "iptables",
         &[
-            "-t", "nat", "-A", "PREROUTING",
-            "-d", bridge_ip,
-            "-p", "udp", "--dport", &from,
-            "-j", "DNAT", "--to-destination", &dst,
+            "-t",
+            "nat",
+            "-A",
+            "PREROUTING",
+            "-d",
+            bridge_ip,
+            "-p",
+            "udp",
+            "--dport",
+            &from,
+            "-j",
+            "DNAT",
+            "--to-destination",
+            &dst,
         ],
     )
     .await?;
@@ -320,10 +326,20 @@ async fn try_iptables_add(bridge_ip: &str, from_port: u16, to_port: u16) -> Resu
     sh(
         "iptables",
         &[
-            "-t", "nat", "-A", "PREROUTING",
-            "-d", bridge_ip,
-            "-p", "tcp", "--dport", &from,
-            "-j", "DNAT", "--to-destination", &dst,
+            "-t",
+            "nat",
+            "-A",
+            "PREROUTING",
+            "-d",
+            bridge_ip,
+            "-p",
+            "tcp",
+            "--dport",
+            &from,
+            "-j",
+            "DNAT",
+            "--to-destination",
+            &dst,
         ],
     )
     .await?;
@@ -531,7 +547,8 @@ mod tests {
 
     #[test]
     fn returns_none_when_no_hotspot() {
-        let sample = "    inet 127.0.0.1/8 scope host lo\n    inet 192.168.1.5/24 scope global eth0\n";
+        let sample =
+            "    inet 127.0.0.1/8 scope host lo\n    inet 192.168.1.5/24 scope global eth0\n";
         assert!(find_hotspot_ip(sample).is_none());
     }
 }
@@ -584,7 +601,7 @@ mod integration_tests {
     // ── Constants ─────────────────────────────────────────────────────────────
 
     const TEST_SSID: &str = "XteinkIntegTest";
-    const TEST_PSK: &str  = "intgtest123"; // ≥ 8 chars (WPA-PSK minimum)
+    const TEST_PSK: &str = "intgtest123"; // ≥ 8 chars (WPA-PSK minimum)
 
     // ── Guard ────────────────────────────────────────────────────────────────
 
@@ -633,8 +650,7 @@ mod integration_tests {
         let Ok(dbus) = system_bus().await else {
             return 0;
         };
-        let Ok(proxy) =
-            zbus::Proxy::new(&dbus, NM_BUS, NM_SETTINGS_PATH, NM_SETTINGS_IFACE).await
+        let Ok(proxy) = zbus::Proxy::new(&dbus, NM_BUS, NM_SETTINGS_PATH, NM_SETTINGS_IFACE).await
         else {
             return 0;
         };
@@ -730,7 +746,11 @@ mod integration_tests {
             .await
             .expect("is_enable should succeed");
 
-        assert_eq!(nm_profile_count().await, 1, "exactly one profile after enable");
+        assert_eq!(
+            nm_profile_count().await,
+            1,
+            "exactly one profile after enable"
+        );
 
         // NM needs a few seconds to bring the AP interface up.
         let ip = wait_for_bridge(Duration::from_secs(15))
@@ -767,7 +787,11 @@ mod integration_tests {
         is_enable(TEST_SSID, TEST_PSK)
             .await
             .expect("first is_enable");
-        assert_eq!(nm_profile_count().await, 1, "one profile after first enable");
+        assert_eq!(
+            nm_profile_count().await,
+            1,
+            "one profile after first enable"
+        );
 
         // Second enable must remove the stale profile before adding a fresh one.
         is_enable(TEST_SSID, TEST_PSK)
@@ -795,17 +819,22 @@ mod integration_tests {
         let _ = full_cleanup().await;
         let _guard = CleanupGuard;
 
-        is_enable(TEST_SSID, TEST_PSK)
-            .await
-            .expect("is_enable");
+        is_enable(TEST_SSID, TEST_PSK).await.expect("is_enable");
 
         // Verify the hotspot is genuinely up before we clean up.
         let ip = wait_for_bridge(Duration::from_secs(15)).await;
-        assert!(ip.is_some(), "bridge should come up before testing full_cleanup");
+        assert!(
+            ip.is_some(),
+            "bridge should come up before testing full_cleanup"
+        );
 
         full_cleanup().await.expect("full_cleanup should succeed");
 
-        assert_eq!(nm_profile_count().await, 0, "profile removed by full_cleanup");
+        assert_eq!(
+            nm_profile_count().await,
+            0,
+            "profile removed by full_cleanup"
+        );
 
         let gone = wait_for_bridge_gone(Duration::from_secs(10)).await;
         assert!(gone, "bridge IP should be gone after full_cleanup");

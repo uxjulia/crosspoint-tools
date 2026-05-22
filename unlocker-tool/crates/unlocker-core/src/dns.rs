@@ -114,8 +114,15 @@ async fn handle_query(
         .ok_or_else(|| anyhow!("no query"))?
         .clone();
 
-    let qname_norm = query.name().to_string().trim_end_matches('.').to_lowercase();
-    let should_spoof = cfg.spoofed_hosts.iter().any(|h| h.to_lowercase() == qname_norm);
+    let qname_norm = query
+        .name()
+        .to_string()
+        .trim_end_matches('.')
+        .to_lowercase();
+    let should_spoof = cfg
+        .spoofed_hosts
+        .iter()
+        .any(|h| h.to_lowercase() == qname_norm);
 
     tracing::info!(
         host = %qname_norm,
@@ -132,11 +139,18 @@ async fn handle_query(
 
     if should_spoof && query.query_type() == RecordType::A {
         tracing::info!(host = %qname_norm, "spoofing");
-        let rec = Record::from_rdata(query.name().clone(), 60, RData::A(rdata::A(cfg.answer_with)));
+        let rec = Record::from_rdata(
+            query.name().clone(),
+            60,
+            RData::A(rdata::A(cfg.answer_with)),
+        );
         response.answers.push(rec);
         response.metadata.response_code = ResponseCode::NoError;
     } else {
-        match resolver.lookup(query.name().clone(), query.query_type()).await {
+        match resolver
+            .lookup(query.name().clone(), query.query_type())
+            .await
+        {
             Ok(lookup) => {
                 for r in lookup.answers() {
                     response.answers.push(r.clone());
