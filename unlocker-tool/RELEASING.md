@@ -103,7 +103,7 @@ Bumps the version, builds + signs + notarizes, commits the version files, tags `
 
 The PowerShell scripts mirror the macOS pipeline: bump version, `cargo build --release -p unlocker-helper`, `npm run tauri -- build` (NSIS + MSI, picks up `app/src-tauri/tauri.windows.conf.json`), `signtool` for both installers using the Sectigo USB token, then push to R2 and merge a `windows-x86_64` entry into `latest.json` while preserving `darwin-aarch64`.
 
-## Linux (x86_64)
+## Linux (x86_64 + aarch64)
 
 ### Setup
 
@@ -133,12 +133,12 @@ In practice you won't run this on a Mac — Tauri's Linux build links against `l
 
 ### CI (GitHub Actions)
 
-`.github/workflows/build-linux.yml` runs the same scripts on `ubuntu-22.04` whenever a `vX.Y.Z` tag is pushed (matches `scripts/release.sh`'s tag step), or on manual dispatch via the Actions tab. It:
+`.github/workflows/build-unlocker-linux.yml` runs the same scripts on `ubuntu-22.04` and `ubuntu-22.04-arm` whenever a `vX.Y.Z` tag is pushed (matches `scripts/release.sh`'s tag step), or on manual dispatch via the Actions tab. It:
 
 1. Installs system deps + Node + Rust.
 2. Runs `scripts/build-linux.sh` (helper → tauri build → AppImage / deb / rpm + signed updater bundle).
 3. Uploads the bundle as a GH Actions artifact for inspection.
-4. Runs `scripts/upload-to-cloudflare-linux.sh` to push to R2 and write `latest-linux-x86_64.json`.
+4. Runs `scripts/upload-to-cloudflare-linux.sh` to push to R2 and write `latest-linux-x86_64.json` / `latest-linux-aarch64.json`.
 5. Creates a GitHub Release with the installers attached.
 
 Required repository secrets (Settings → Secrets and variables → Actions):
@@ -155,15 +155,15 @@ Required repository secrets (Settings → Secrets and variables → Actions):
 
 `build-linux.sh`:
 
-1. Builds `unlocker-helper` for `x86_64-unknown-linux-gnu`.
-2. Runs `tauri build --target x86_64-unknown-linux-gnu --config src-tauri/tauri.linux.conf.json` — produces `.AppImage`, `.deb`, `.rpm`.
+1. Builds `unlocker-helper` for the native Linux runner architecture.
+2. Runs `tauri build --target $LINUX_TARGET --config src-tauri/tauri.linux.conf.json` — produces `.AppImage`, `.deb`, `.rpm`. CI sets `LINUX_TARGET` to `x86_64-unknown-linux-gnu` or `aarch64-unknown-linux-gnu`; local builds infer it from `uname -m`.
 3. The Linux config bundles the helper as a Tauri resource so it lands at `resource_dir()/unlocker-helper` inside the AppImage / deb / rpm — same path the Tauri shell already reads.
 4. Tauri auto-signs the `.AppImage` (producing a sibling `.AppImage.sig`) with `TAURI_SIGNING_PRIVATE_KEY` if set. The Tauri 2 auto-updater downloads the AppImage directly and verifies the sig — there is no `.AppImage.tar.gz` updater wrapper anymore (that was a v1 thing).
 
 Output:
-- AppImage: `target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage` (+ `.sig`)
-- Debian package: `target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb`
-- RPM package: `target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm`
+- AppImage: `target/<linux-target>/release/bundle/appimage/*.AppImage` (+ `.sig`)
+- Debian package: `target/<linux-target>/release/bundle/deb/*.deb`
+- RPM package: `target/<linux-target>/release/bundle/rpm/*.rpm`
 
 ### Privileged helper at runtime
 

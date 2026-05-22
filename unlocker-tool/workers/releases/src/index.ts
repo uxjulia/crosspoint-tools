@@ -13,6 +13,9 @@
  *   GET /unlocker-latest.AppImage
  *   GET /unlocker-latest.deb
  *   GET /unlocker-latest.rpm
+ *   GET /unlocker-latest-arm64.AppImage
+ *   GET /unlocker-latest-arm64.deb
+ *   GET /unlocker-latest-arm64.rpm
  *     Convenience redirects to the most-recent versioned artifact.
  *
  * Anything else is a passthrough to the bucket.
@@ -53,14 +56,17 @@ export default {
     );
     if (latestMatch) {
       try {
+        const arch = latestMatch[1];
         const ext = latestMatch[2];
+        const linuxPlatform =
+          arch === "arm64" ? "linux-aarch64" : "linux-x86_64";
         const manifestForExt: Record<string, string> = {
           dmg: "latest.json",
           "tar.gz": "latest.json",
           msi: "latest-windows-x86_64.json",
-          AppImage: "latest-linux-x86_64.json",
-          deb: "latest-linux-x86_64.json",
-          rpm: "latest-linux-x86_64.json",
+          AppImage: `latest-${linuxPlatform}.json`,
+          deb: `latest-${linuxPlatform}.json`,
+          rpm: `latest-${linuxPlatform}.json`,
         };
         const manifestKey = manifestForExt[ext] ?? "latest.json";
         const manifestObj = await env.BUCKET.get(manifestKey);
@@ -81,9 +87,9 @@ export default {
             dmg: "darwin-aarch64",
             "tar.gz": "darwin-aarch64",
             msi: "windows-x86_64",
-            AppImage: "linux-x86_64",
-            deb: "linux-x86_64",
-            rpm: "linux-x86_64",
+            AppImage: linuxPlatform,
+            deb: linuxPlatform,
+            rpm: linuxPlatform,
           };
           const platformKey = platformForExt[ext];
           const version =
@@ -93,9 +99,9 @@ export default {
             dmg: `v${version}/XteinkUnlocker_${version}_universal.dmg`,
             "tar.gz": `v${version}/XteinkUnlocker_${version}_darwin-universal.app.tar.gz`,
             msi: `v${version}/XteinkUnlocker_${version}_x64.msi`,
-            AppImage: `v${version}/XteinkUnlocker_${version}_linux-x86_64.AppImage`,
-            deb: `v${version}/XteinkUnlocker_${version}_linux-x86_64.deb`,
-            rpm: `v${version}/XteinkUnlocker_${version}_linux-x86_64.rpm`,
+            AppImage: `v${version}/XteinkUnlocker_${version}_${linuxPlatform}.AppImage`,
+            deb: `v${version}/XteinkUnlocker_${version}_${linuxPlatform}.deb`,
+            rpm: `v${version}/XteinkUnlocker_${version}_${linuxPlatform}.rpm`,
           };
           const targetKey = fileMap[ext];
           if (targetKey) {

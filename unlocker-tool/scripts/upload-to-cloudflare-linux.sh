@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Push the latest Linux build artifacts to R2 and write the linux-x86_64
+# Push the latest Linux build artifacts to R2 and write the linux-<arch>
 # update manifest so the Tauri updater (running inside the AppImage) picks it
 # up. Run after build-linux.sh.
 #
@@ -33,6 +33,20 @@ R2_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 VERSION=$(grep '"version"' app/src-tauri/tauri.conf.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
 echo "Uploading version: $VERSION"
+
+HOST_ARCH="$(uname -m)"
+DEFAULT_TARGET="x86_64-unknown-linux-gnu"
+case "$HOST_ARCH" in
+  x86_64|amd64) DEFAULT_TARGET="x86_64-unknown-linux-gnu" ;;
+  aarch64|arm64) DEFAULT_TARGET="aarch64-unknown-linux-gnu" ;;
+esac
+LINUX_TARGET="${LINUX_TARGET:-$DEFAULT_TARGET}"
+case "$LINUX_TARGET" in
+  x86_64-unknown-linux-gnu) RELEASE_ARCH="x86_64" ;;
+  aarch64-unknown-linux-gnu) RELEASE_ARCH="aarch64" ;;
+  *) echo "Unsupported LINUX_TARGET: $LINUX_TARGET" >&2; exit 1 ;;
+esac
+PLATFORM_KEY="linux-${RELEASE_ARCH}"
 
 # ── Extract release notes from CHANGELOG.md (same logic as macOS upload) ──
 extract_changelog() {
@@ -84,9 +98,9 @@ upload_file() {
 }
 
 echo
-echo "=== Uploading Linux artifacts ==="
+echo "=== Uploading Linux artifacts (${PLATFORM_KEY}) ==="
 
-BUNDLE_DIR="target/x86_64-unknown-linux-gnu/release/bundle"
+BUNDLE_DIR="target/${LINUX_TARGET}/release/bundle"
 
 # Tauri 2 signs the AppImage directly, producing `*.AppImage` and a sibling
 # `*.AppImage.sig`. (v1 produced a `.AppImage.tar.gz` updater bundle — that
@@ -98,14 +112,14 @@ RPM=$(find "${BUNDLE_DIR}/rpm" -name "*.rpm" -type f 2>/dev/null | head -1)
 
 # Upload installers under stable, version-pinned names so the URL pattern
 # matches the macOS / Windows convention.
-APPIMAGE_KEY="v${VERSION}/XteinkUnlocker_${VERSION}_linux-x86_64.AppImage"
+APPIMAGE_KEY="v${VERSION}/XteinkUnlocker_${VERSION}_${PLATFORM_KEY}.AppImage"
 [[ -n "${APPIMAGE}" ]] && upload_file "$APPIMAGE" "$APPIMAGE_KEY"
 [[ -n "${APPIMAGE_SIG}" ]] && upload_file "$APPIMAGE_SIG" "${APPIMAGE_KEY}.sig"
-[[ -n "${DEB}" ]] && upload_file "$DEB" "v${VERSION}/XteinkUnlocker_${VERSION}_linux-x86_64.deb"
-[[ -n "${RPM}" ]] && upload_file "$RPM" "v${VERSION}/XteinkUnlocker_${VERSION}_linux-x86_64.rpm"
+[[ -n "${DEB}" ]] && upload_file "$DEB" "v${VERSION}/XteinkUnlocker_${VERSION}_${PLATFORM_KEY}.deb"
+[[ -n "${RPM}" ]] && upload_file "$RPM" "v${VERSION}/XteinkUnlocker_${VERSION}_${PLATFORM_KEY}.rpm"
 
 echo
-echo "=== Writing linux-x86_64 update manifest ==="
+echo "=== Writing ${PLATFORM_KEY} update manifest ==="
 
 LINUX_SIG=""
 [[ -n "${APPIMAGE_SIG:-}" && -f "${APPIMAGE_SIG}" ]] && LINUX_SIG=$(cat "${APPIMAGE_SIG}")
@@ -116,25 +130,25 @@ else
   PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   APPIMAGE_URL="https://unlocker-releases.crosspointreader.com/${APPIMAGE_KEY}"
 
-  OUT="${BUNDLE_DIR}/latest-linux-x86_64.json"
+  OUT="${BUNDLE_DIR}/latest-${PLATFORM_KEY}.json"
   cat > "$OUT" <<JSON
 {
   "version": "${VERSION}",
   "notes": $(jq -Rs . <<<"$CHANGELOG_NOTES"),
   "pub_date": "${PUB_DATE}",
   "platforms": {
-    "linux-x86_64": {
+    "${PLATFORM_KEY}": {
       "signature": $(jq -Rs . <<<"$LINUX_SIG"),
       "url": "${APPIMAGE_URL}"
     }
   }
 }
 JSON
-  upload_file "$OUT" "latest-linux-x86_64.json"
+  upload_file "$OUT" "latest-${PLATFORM_KEY}.json"
 fi
 
 echo
 echo "=== Upload complete ==="
 echo "Linux update endpoint:"
-echo "  https://unlocker-releases.crosspointreader.com/latest-linux-x86_64.json"
+echo "  https://unlocker-releases.crosspointreader.com/latest-${PLATFORM_KEY}.json"
 echo "(Auto-update only fires for AppImage installs; .deb / .rpm users upgrade via apt/dnf.)"

@@ -1,7 +1,7 @@
 name: Build Unlocker (Linux)
 
-# Builds + signs + uploads the Linux x86_64 artifacts (AppImage + .AppImage.sig,
-# deb, rpm) and writes latest-linux-x86_64.json to R2.
+# Builds + signs + uploads the Linux x86_64 and aarch64 artifacts (AppImage +
+# .AppImage.sig, deb, rpm) and writes latest-linux-<arch>.json manifests to R2.
 #
 # Trigger: a `vX.Y.Z` tag push (matches unlocker-tool/scripts/release.sh) or manual dispatch.
 #
@@ -35,7 +35,18 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x86_64
+          - runner: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            platform: linux-aarch64
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout
@@ -64,7 +75,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target }}
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -82,7 +93,7 @@ jobs:
 
       - name: Clean previous bundle outputs
         # Belt-and-suspenders in case anything else recreates target/.
-        run: rm -rf target/x86_64-unknown-linux-gnu/release/bundle
+        run: rm -rf target/${{ matrix.target }}/release/bundle
 
       - name: Install frontend dependencies
         working-directory: unlocker-tool/app
@@ -105,18 +116,19 @@ jobs:
       - name: Build (helper + Tauri bundle)
         run: ./scripts/build-linux.sh
         env:
+          LINUX_TARGET: ${{ matrix.target }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload artifacts to GH Actions
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x86_64
+          name: ${{ matrix.platform }}
           path: |
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage.sig
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
 
       - name: Install AWS CLI
         if: startsWith(github.ref, 'refs/tags/v') || inputs.upload
@@ -129,6 +141,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') || inputs.upload
         run: ./scripts/upload-to-cloudflare-linux.sh
         env:
+          LINUX_TARGET: ${{ matrix.target }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_R2_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY }}
           CLOUDFLARE_R2_SECRET_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_KEY }}
@@ -139,9 +152,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
-            unlocker-tool/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            unlocker-tool/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
           draft: false
           generate_release_notes: true
         env:

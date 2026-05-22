@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Linux release build for Xteink Unlocker (x86_64).
+# Linux release build for Xteink Unlocker.
 #
-#  1. cargo build       — produces unlocker-helper for x86_64-unknown-linux-gnu
+#  1. cargo build       — produces unlocker-helper for the native Linux arch
 #  2. tauri build       — produces .deb, .rpm, and .AppImage. Helper is
 #                         included via tauri.linux.conf.json bundle.resources
 #                         so it lands at resource_dir()/unlocker-helper.
@@ -14,6 +14,7 @@
 #
 # Usage:
 #   ./scripts/build-linux.sh [major|minor|patch]
+#   LINUX_TARGET=aarch64-unknown-linux-gnu ./scripts/build-linux.sh
 
 set -euo pipefail
 
@@ -29,6 +30,14 @@ fi
 if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
     echo "warning: TAURI_SIGNING_PRIVATE_KEY not set — auto-update bundle won't be signed" >&2
 fi
+
+HOST_ARCH="$(uname -m)"
+DEFAULT_TARGET="x86_64-unknown-linux-gnu"
+case "$HOST_ARCH" in
+    x86_64|amd64) DEFAULT_TARGET="x86_64-unknown-linux-gnu" ;;
+    aarch64|arm64) DEFAULT_TARGET="aarch64-unknown-linux-gnu" ;;
+esac
+LINUX_TARGET="${LINUX_TARGET:-$DEFAULT_TARGET}"
 
 # ── Optional: bump version first ──
 if [[ -n "${1:-}" ]]; then
@@ -56,15 +65,15 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
 fi
 
 # ── Ensure rust target ──
-echo "==> Ensuring rust target x86_64-unknown-linux-gnu"
-rustup target add x86_64-unknown-linux-gnu >/dev/null
+echo "==> Ensuring rust target ${LINUX_TARGET}"
+rustup target add "${LINUX_TARGET}" >/dev/null
 
 # ── Build the helper ──
 # No --target: tauri.linux.conf.json bundles the helper from
 # ../../target/release/unlocker-helper (i.e. the default, un-prefixed target
-# dir). Building with --target x86_64-unknown-linux-gnu places it under
+# dir). Building with --target places it under
 # target/<triple>/release/ instead, which the bundler can't find. The Linux
-# runner is already x86_64 Linux so the default target matches.
+# runners are native for each release architecture, so the default target matches.
 echo "==> Building unlocker-helper (release)"
 cargo build --release -p unlocker-helper
 
@@ -76,16 +85,17 @@ file "${HELPER_BIN_SRC}"
 # Pulls in tauri.linux.conf.json which references the helper binary as a
 # bundle resource so it ends up at resource_dir()/unlocker-helper inside
 # the AppImage / deb / rpm.
-echo "==> Building Tauri app (x86_64-unknown-linux-gnu)"
+echo "==> Building Tauri app (${LINUX_TARGET})"
 ( cd app && npm run tauri -- build \
-    --target x86_64-unknown-linux-gnu \
+    --target "${LINUX_TARGET}" \
     --config src-tauri/tauri.linux.conf.json )
 
 # ── Locate produced artifacts ──
-APPIMAGE=$(find target/x86_64-unknown-linux-gnu/release/bundle/appimage -name "*.AppImage" -type f 2>/dev/null | head -1)
-APPIMAGE_SIG=$(find target/x86_64-unknown-linux-gnu/release/bundle/appimage -name "*.AppImage.sig" -type f 2>/dev/null | head -1)
-DEB=$(find target/x86_64-unknown-linux-gnu/release/bundle/deb -name "*.deb" -type f 2>/dev/null | head -1)
-RPM=$(find target/x86_64-unknown-linux-gnu/release/bundle/rpm -name "*.rpm" -type f 2>/dev/null | head -1)
+BUNDLE_DIR="target/${LINUX_TARGET}/release/bundle"
+APPIMAGE=$(find "${BUNDLE_DIR}/appimage" -name "*.AppImage" -type f 2>/dev/null | head -1)
+APPIMAGE_SIG=$(find "${BUNDLE_DIR}/appimage" -name "*.AppImage.sig" -type f 2>/dev/null | head -1)
+DEB=$(find "${BUNDLE_DIR}/deb" -name "*.deb" -type f 2>/dev/null | head -1)
+RPM=$(find "${BUNDLE_DIR}/rpm" -name "*.rpm" -type f 2>/dev/null | head -1)
 
 [[ -f "${APPIMAGE}" ]] || { echo "no AppImage produced" >&2; exit 1; }
 

@@ -30,10 +30,10 @@ scripts/
   build-macos.sh          tauri build → inject helper → sign → notarize → update bundle
   build-macos-dev.sh      same as above but skips notarization (faster local iteration)
   build-windows.ps1       Windows equivalent of build-macos.sh (NSIS + MSI + signtool)
-  build-linux.sh          Linux x86_64 (AppImage + deb + rpm)
+  build-linux.sh          Linux x86_64/aarch64 (AppImage + deb + rpm)
   upload-to-cloudflare.sh push macOS artifacts to R2 + refresh latest-darwin-*.json
   upload-to-cloudflare.ps1 Windows equivalent
-  upload-to-cloudflare-linux.sh Linux equivalent (latest-linux-x86_64.json)
+  upload-to-cloudflare-linux.sh Linux equivalent (latest-linux-*.json)
   release.sh              the whole pipeline: bump → build → commit → tag → push → upload
 firmware-patches/         pre-patched firmware bins for cases the catalog can't cover
                           (e.g. the X3 eFuse blk validity workaround)
