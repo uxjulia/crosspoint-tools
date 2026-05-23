@@ -233,6 +233,18 @@ function parseOtadata(data) {
   };
 }
 
+export function otaStateName(state) {
+  switch (state) {
+    case OTA_STATE.NEW: return 'new';
+    case OTA_STATE.PENDING_VERIFY: return 'pending_verify';
+    case OTA_STATE.VALID: return 'valid';
+    case OTA_STATE.INVALID: return 'invalid';
+    case OTA_STATE.ABORTED: return 'aborted';
+    case OTA_STATE.UNDEFINED: return 'undefined';
+    default: return `unknown (${state})`;
+  }
+}
+
 // Builds the 4 KB target sector with the new entry stamped at byte 0. The
 // other sector is left untouched on flash so a power cut during the erase /
 // write window leaves the old (still-valid) entry as a fallback boot
@@ -359,6 +371,10 @@ export class CrossPointFlasher {
     this.layout = extractLayout(parsePartitionTable(data));
   }
 
+  async ensureLayout() {
+    if (!this.layout) await this.readLayout();
+  }
+
   // Diagnostic-only: returns the raw PT plus which known layout it matches.
   // Does not set this.layout — flashFirmware calls readLayout() for that.
   async readPartitionTable() {
@@ -369,6 +385,77 @@ export class CrossPointFlasher {
     else if (matchesPartitionTable(partitions, X4_PARTITION_TABLE)) matchedLayout = 'X4';
     else if (matchesPartitionTable(partitions, CROSSPOINT_KO_PARTITION_TABLE)) matchedLayout = 'KO';
     return { partitions, matchedLayout, raw: data };
+  }
+
+  async readOtadataPartition({ onProgress } = {}) {
+    await this.ensureLayout();
+    const data = await this.espLoader.readFlash(this.layout.otadataOffset, OTADATA_BYTES, (_, p, t) => {
+      if (onProgress) onProgress('Read OTA data', p, t);
+    });
+    return { data, ota: parseOtadata(data), offset: this.layout.otadataOffset };
+  }
+
+  async readAppPartition(partition, { onProgress } = {}) {
+    await this.ensureLayout();
+    const appIndex = partition === 'app1' ? 1 : 0;
+    const slot = this.layout.appSlots[appIndex];
+    const data = await this.espLoader.readFlash(slot.offset, slot.size, (_, p, t) => {
+      if (onProgress) onProgress(`Read ${partition}`, p, t);
+    });
+    return { data, offset: slot.offset, size: slot.size };
+  }
+
+  async readAppPartitionForIdentification(partition, { readSize = 0x6400, offset = 0, onProgress } = {}) {
+    await this.ensureLayout();
+    const appIndex = partition === 'app1' ? 1 : 0;
+    const slot = this.layout.appSlots[appIndex];
+    if (offset < 0 || readSize < 0 || offset + readSize > slot.size) {
+      throw new Error(`Read range is outside ${partition}: offset ${offset}, size ${readSize}, partition size ${slot.size}.`);
+    }
+    return this.espLoader.readFlash(slot.offset + offset, readSize, (_, p, t) => {
+      if (onProgress) onProgress(`Read ${partition}`, offset + p, offset + t);
+    });
+  }
+
+  async swapBootPartition({ onStepChange, onProgress, skipReset = false } = {}) {
+    const steps = ['Connect to device', 'Validate partition table', 'Read OTA data', 'Update boot partition', skipReset ? 'Disconnect' : 'Reset device'];
+    const step = (idx, status) => { if (onStepChange) onStepChange(idx, steps[idx], status); };
+
+    step(0, 'running');
+    await this.connect();
+    step(0, 'done');
+
+    step(1, 'running');
+    await this.readLayout();
+    step(1, 'done');
+
+    step(2, 'running');
+    const otaRaw = await this.espLoader.readFlash(this.layout.otadataOffset, OTADATA_BYTES, (_, p, t) => {
+      if (onProgress) onProgress('Read OTA data', p, t);
+    });
+    const ota = parseOtadata(otaRaw);
+    step(2, 'done');
+
+    step(3, 'running');
+    const sectorStart = ota.targetSector * OTA_SECTOR_BYTES;
+    const existingSector = otaRaw.subarray(sectorStart, sectorStart + OTA_SECTOR_BYTES);
+    const newSector = buildNewOtadataSector(existingSector, ota.newSeq);
+    await this.espLoader.writeFlash({
+      fileArray: [{ data: this.espLoader.ui8ToBstr(newSector), address: this.layout.otadataOffset + sectorStart }],
+      flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
+      eraseAll: false, compress: true,
+      reportProgress: (_, written, total) => { if (onProgress) onProgress('Update boot partition', written, total); },
+    });
+    const verifyRaw = await this.espLoader.readFlash(this.layout.otadataOffset, OTADATA_BYTES);
+    const verify = parseOtadata(verifyRaw);
+    assertOtadataSwitch(verify, ota.inactiveApp, ota.newSeq);
+    step(3, 'done');
+
+    step(4, 'running');
+    await this.disconnect(skipReset);
+    step(4, 'done');
+
+    return { data: verifyRaw, ota: verify, offset: this.layout.otadataOffset };
   }
 
   // --- OTA Flash (firmware to backup partition) ---
