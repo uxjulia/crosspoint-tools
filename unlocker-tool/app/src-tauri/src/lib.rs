@@ -893,10 +893,25 @@ async fn run_prepared_install(
         .await;
 
     // ── Wait for device to join ──
-    let (mac, ip) = await_device_lease(&helper, bridge_ip, Duration::from_secs(300)).await?;
-    log.push("info", format!("device joined: {mac} -> {ip}"), None)
-        .await;
-    orch.set_device_ip(ip).await;
+    // Best-effort: DHCP lease detection is cosmetic (gives us MAC/IP to show).
+    // The real "device is connected" signal is the manifest HTTP hit below.
+    // Don't fail the session if the lease scan misses — it's known flaky on
+    // Windows (ARP table) and Linux (lease file timing).
+    match await_device_lease(&helper, bridge_ip, Duration::from_secs(1800)).await {
+        Ok((mac, ip)) => {
+            log.push("info", format!("device joined: {mac} -> {ip}"), None)
+                .await;
+            orch.set_device_ip(ip).await;
+        }
+        Err(e) => {
+            log.push(
+                "warn",
+                format!("could not detect DHCP lease ({e}); waiting for device check-update anyway"),
+                None,
+            )
+            .await;
+        }
+    }
 
     // Servers are already armed. We block here until the helper reports
     // the manifest request.
