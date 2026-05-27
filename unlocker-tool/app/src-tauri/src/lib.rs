@@ -327,9 +327,15 @@ async fn install_helper(app: AppHandle) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     {
+        // Don't fail if we can't chmod: on a deb install the helper lives in
+        // root-owned /usr/lib/... (EPERM for the unprivileged GUI), and inside
+        // an AppImage it lives on a read-only squashfs mount (EROFS). In both
+        // cases the bundle already ships the helper as 0755, so a chmod failure
+        // here is fine — but propagating the error would skip the pkexec call
+        // below and the user would never see an auth prompt.
         use std::os::unix::fs::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o755);
-        std::fs::set_permissions(&helper_path, perms).map_err(|e| e.to_string())?;
+        let _ = std::fs::set_permissions(&helper_path, perms);
 
         let path_str = shell_quote(&helper_path.to_string_lossy());
 
