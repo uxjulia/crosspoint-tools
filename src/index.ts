@@ -43,8 +43,14 @@ export default {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'public, max-age=3600',
       });
-      const upstreamType = res.headers.get('Content-Type');
-      if (upstreamType) headers.set('Content-Type', upstreamType);
+      // GitHub raw serves .json as text/plain; label it correctly, otherwise
+      // pass the upstream type through (so .bmp stays image/bmp, etc.).
+      if (rel.endsWith('.json')) {
+        headers.set('Content-Type', 'application/json');
+      } else {
+        const upstreamType = res.headers.get('Content-Type');
+        if (upstreamType) headers.set('Content-Type', upstreamType);
+      }
       return new Response(res.body, { status: res.status, headers });
     }
 
