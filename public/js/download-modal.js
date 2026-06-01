@@ -1,4 +1,4 @@
-// Download .bin modal — device picker + firmware picker (from /api/catalog) → download.
+// Download .bin modal: device picker + firmware picker (from /api/catalog) → download.
 
 const MODAL_HTML = `
 <div id="download-modal" class="fixed inset-0 z-[100] hidden items-center justify-center px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="download-modal-title">

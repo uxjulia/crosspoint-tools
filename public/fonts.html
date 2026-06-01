@@ -195,19 +195,19 @@
                   <br><br>
                   Choosing a preset does <strong class="text-white">not</strong> create glyphs by itself. You still need to upload a primary font or fallback font that actually contains those characters, or they will be omitted from the generated <code class="rounded bg-stone-700/60 px-1 py-0.5 font-mono text-[11px] text-stone-100">.cpfont</code>.
                   <br><br>
-                  <strong class="text-white">Built-in</strong> — Enables the same general Unicode ranges as the default CrossPoint fonts: English, most European languages, Cyrillic (Russian, Ukrainian, etc.), combining diacritics, math operators, arrows, and common ligatures. Best for most users if your uploaded fonts already contain those glyphs.
+                  <strong class="text-white">Built-in</strong>: Enables the same general Unicode ranges as the default CrossPoint fonts: English, most European languages, Cyrillic (Russian, Ukrainian, etc.), combining diacritics, math operators, arrows, and common ligatures. Best for most users if your uploaded fonts already contain those glyphs.
                   <br><br>
-                  <strong class="text-white">Latin Extended</strong> — Enables broader Latin ranges including Vietnamese, African languages, and additional diacritics. Smaller than Built-in (no Cyrillic). Use if you only need Latin scripts and your uploaded fonts include those glyphs.
+                  <strong class="text-white">Latin Extended</strong>: Enables broader Latin ranges including Vietnamese, African languages, and additional diacritics. Smaller than Built-in (no Cyrillic). Use if you only need Latin scripts and your uploaded fonts include those glyphs.
                   <br><br>
-                  <strong class="text-white">Reading (recommended for fiction)</strong> — Enables the extra ranges often needed by English-language literary fiction and scifi/popsci: Greek (physics terms like λ, φ), super/subscripts, currency, arrows, math operators, uncommon dialogue punctuation, CJK quote marks, and miscellaneous symbols including music notes (♪ ♫ ♬), stars (★), and dingbats (✓). Use this when your uploaded fonts or fallback fonts actually contain those glyphs.
+                  <strong class="text-white">Reading (recommended for fiction)</strong>: Enables the extra ranges often needed by English-language literary fiction and scifi/popsci: Greek (physics terms like λ, φ), super/subscripts, currency, arrows, math operators, uncommon dialogue punctuation, CJK quote marks, and miscellaneous symbols including music notes (♪ ♫ ♬), stars (★), and dingbats (✓). Use this when your uploaded fonts or fallback fonts actually contain those glyphs.
                   <br><br>
-                  <strong class="text-white">Note on Fallback Fonts</strong> — Optional fallback fonts only fill missing codepoints. The main family is always checked first, then fallback family 1, then fallback family 2. Fallback fonts do not replace glyphs the main family already has.
+                  <strong class="text-white">Note on Fallback Fonts</strong>: Optional fallback fonts only fill missing codepoints. The main family is always checked first, then fallback family 1, then fallback family 2. Fallback fonts do not replace glyphs the main family already has.
                 </span>
               </span>
             </label>
             <select id="intervalPreset" class="mt-1.5 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none">
-              <option value="reading" selected>Reading — fiction with symbols (recommended)</option>
-              <option value="builtin">Built-in — matches default fonts</option>
+              <option value="reading" selected>Reading: fiction with symbols (recommended)</option>
+              <option value="builtin">Built-in: matches default fonts</option>
               <option value="latin-ext">Latin Extended</option>
               <option value="custom">Advanced custom ranges...</option>
             </select>
@@ -280,7 +280,7 @@
         <ol class="mt-4 list-decimal space-y-2 pl-5 text-sm/6 text-stone-600">
           <li>Download the generated <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">.cpfont</code> files (or the zip).</li>
           <li>Connect to your reader's WiFi and open the web interface, then go to the <strong>Fonts</strong> page and upload each file. Or copy them to the SD card directly.</li>
-          <li>If copying to the SD card, place each file at <code class="whitespace-normal break-words max-w-full rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/fonts/&lt;FamilyName&gt;/&lt;FamilyName&gt;_&lt;size&gt;.cpfont</code> — the folder name must match the family name in the filename. For example, files named <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">Literata_12.cpfont</code> through <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">Literata_18.cpfont</code> all go in <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/fonts/Literata/</code>. Use <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/.fonts/&lt;FamilyName&gt;/</code> instead if you'd prefer the folder hidden (toggle show hidden files on your OS to see it).</li>
+          <li>If copying to the SD card, place each file at <code class="whitespace-normal break-words max-w-full rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/fonts/&lt;FamilyName&gt;/&lt;FamilyName&gt;_&lt;size&gt;.cpfont</code>; the folder name must match the family name in the filename. For example, files named <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">Literata_12.cpfont</code> through <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">Literata_18.cpfont</code> all go in <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/fonts/Literata/</code>. Use <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">/.fonts/&lt;FamilyName&gt;/</code> instead if you'd prefer the folder hidden (toggle show hidden files on your OS to see it).</li>
           <li>The font will appear in your reader's font settings.</li>
         </ol>
       </div>
@@ -509,7 +509,7 @@
           parseInt(document.getElementById('size3').value, 10) || 18,
         ];
 
-        // Always start fresh — clears any prior build for this user so we
+        // Always start fresh; clears any prior build for this user so we
         // never collide with the worker's per-user lock from an old session.
         await fetch('/api/font-build/clear', { method: 'POST', credentials: 'same-origin' });
 

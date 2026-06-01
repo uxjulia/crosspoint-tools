@@ -156,19 +156,19 @@
           <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div class="rounded-lg bg-stone-50 px-4 py-3">
               <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Version</div>
-              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-version">&mdash;</div>
+              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-version">&hellip;</div>
             </div>
             <div class="rounded-lg bg-stone-50 px-4 py-3">
               <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Built</div>
-              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-date">&mdash;</div>
+              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-date">&hellip;</div>
             </div>
             <div class="rounded-lg bg-stone-50 px-4 py-3">
               <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Commit</div>
-              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-commit">&mdash;</div>
+              <div class="mt-1 font-mono text-sm font-semibold text-stone-900 tabular-nums" id="build-commit">&hellip;</div>
             </div>
             <div class="rounded-lg bg-stone-50 px-4 py-3">
               <div class="text-xs font-medium uppercase tracking-wide text-stone-400">Size</div>
-              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-size">&mdash;</div>
+              <div class="mt-1 text-sm font-semibold text-stone-900 tabular-nums" id="build-size">&hellip;</div>
             </div>
           </div>
 
@@ -899,7 +899,7 @@
       }
     });
 
-    // New build / retry buttons — reload the form
+    // New build / retry buttons: reload the form
     async function clearCustomBuild() {
       Object.keys(pendingReplacements).forEach(k => delete pendingReplacements[k]);
       await fetch('/api/custom-build/clear', { method: 'POST' });

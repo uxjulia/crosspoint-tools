@@ -130,7 +130,7 @@
 
         <div class="mt-3 space-y-2">
           <input type="text" id="beta-name" placeholder="Build name (e.g. KOSync Fix)" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
-          <textarea id="beta-notes" placeholder="Test notes — supports markdown: **bold**, *italic*, [text](url), `code`" rows="3" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 resize-none"></textarea>
+          <textarea id="beta-notes" placeholder="Test notes. Supports markdown: **bold**, *italic*, [text](url), `code`" rows="3" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 resize-none"></textarea>
 
           <div class="flex gap-1 rounded-lg bg-stone-100 p-1 text-xs font-medium">
             <button type="button" id="beta-mode-upload" onclick="setBetaMode('upload')" class="flex-1 rounded-md px-3 py-1.5 text-stone-600">Upload .bin</button>
@@ -233,7 +233,7 @@
           return;
         }
         const meta = await res.json();
-        const date = meta.buildDate ? new Date(meta.buildDate).toLocaleString() : '—';
+        const date = meta.buildDate ? new Date(meta.buildDate).toLocaleString() : '-';
         const statusColors = {
           success: 'bg-brand-500',
           building: 'bg-amber-500 animate-pulse',
@@ -247,12 +247,12 @@
               <span class="size-2 rounded-full ${dotClass}"></span>
               <span class="font-medium text-stone-700">${meta.status}</span>
               <span class="text-stone-300">|</span>
-              <span class="font-mono tabular-nums">${meta.commitShort || '—'}</span>
+              <span class="font-mono tabular-nums">${meta.commitShort || '-'}</span>
             </div>
             <div class="grid grid-cols-2 gap-2 text-xs">
-              <div><span class="text-stone-400">Version:</span> <span class="text-stone-700">${meta.version || '—'}</span></div>
+              <div><span class="text-stone-400">Version:</span> <span class="text-stone-700">${meta.version || '-'}</span></div>
               <div><span class="text-stone-400">Built:</span> <span class="text-stone-700 tabular-nums">${date}</span></div>
-              <div><span class="text-stone-400">Size:</span> <span class="text-stone-700">${meta.firmwareSize ? (meta.firmwareSize / 1024 / 1024).toFixed(1) + ' MB' : '—'}</span></div>
+              <div><span class="text-stone-400">Size:</span> <span class="text-stone-700">${meta.firmwareSize ? (meta.firmwareSize / 1024 / 1024).toFixed(1) + ' MB' : '-'}</span></div>
               <div><span class="text-stone-400">Changelog:</span> <span class="text-stone-700">${meta.changelog?.length || 0} commits</span></div>
             </div>
             ${meta.error ? `<div class="mt-1 rounded bg-red-50 px-2 py-1 text-xs text-red-700">${meta.error}</div>` : ''}
@@ -527,7 +527,7 @@
       if (!editEl.classList.contains('hidden')) {
         document.getElementById('beta-edit-name-' + id).value = name;
         document.getElementById('beta-edit-notes-' + id).value = notes;
-        // Don't pre-fill the tag — leaving it blank means "keep current binary".
+        // Don't pre-fill the tag; leaving it blank means "keep current binary".
         // Pre-filling would force a re-fetch on every save.
         document.getElementById('beta-edit-tag-' + id).value = '';
         document.getElementById('beta-edit-tag-' + id).placeholder = currentTag

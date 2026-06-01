@@ -1,5 +1,5 @@
 /**
- * CrossPoint ESP32 Flasher — shared flashing module
+ * CrossPoint ESP32 Flasher: shared flashing module
  * Uses esptool-js via ESM import for WebSerial-based OTA flashing.
  */
 
@@ -128,7 +128,7 @@ export async function validateFirmwareImage(data) {
 //
 // Reference layouts the debug page compares against. The flasher derives
 // its actual offsets from the device's PT (extractLayout), so these are not
-// load-bearing for OTA — they're labels used for diagnostics.
+// load-bearing for OTA; they're labels used for diagnostics.
 
 export const X4_PARTITION_TABLE = [
   { type: 'data-nvs', offset: 0x9000, size: 0x5000 },
@@ -376,7 +376,7 @@ export class CrossPointFlasher {
   }
 
   // Diagnostic-only: returns the raw PT plus which known layout it matches.
-  // Does not set this.layout — flashFirmware calls readLayout() for that.
+  // Does not set this.layout; flashFirmware calls readLayout() for that.
   async readPartitionTable() {
     const data = await this.espLoader.readFlash(0x8000, 0x1000);
     const partitions = parsePartitionTable(data);

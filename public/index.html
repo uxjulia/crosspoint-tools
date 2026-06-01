@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:wght@400;500;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:wght@400;500;700&family=Noto+Serif+Hebrew:wght@400;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -50,7 +50,7 @@
   </script>
   <style type="text/tailwindcss">
     /* ============================================================
-       E-INK DEVICE MOCKUP — renders firmware UI (Lyra theme)
+       E-INK DEVICE MOCKUP: renders firmware UI (Lyra theme)
        Base canvas: 480×800. Scale with --eink-scale CSS variable.
        ============================================================ */
 
@@ -91,7 +91,7 @@
     }
     .eink-screen * { box-sizing: border-box; }
 
-    /* Bare screen (no device bezel) — used for cutouts */
+    /* Bare screen (no device bezel) used for cutouts */
     .eink-bare {
       width: calc(480px * var(--eink-scale));
       height: calc(800px * var(--eink-scale));
@@ -130,7 +130,7 @@
       mix-blend-mode: multiply;
     }
 
-    /* ----- Lyra theme primitives — pixel-exact port from src/components/themes/lyra/LyraTheme.cpp -----
+    /* ----- Lyra theme primitives: pixel-exact port from src/components/themes/lyra/LyraTheme.cpp -----
        All values come from LyraMetrics::values and the drawing routines. Canvas is 480×800. */
 
     /* Header: 84px for non-home screens; home override reduces to 56px (homeTopPadding).
@@ -198,7 +198,7 @@
       flex-shrink: 0;
     }
 
-    /* Home recent-book cover tile — flows right after header (home header = 56px) */
+    /* Home recent-book cover tile: flows right after header (home header = 56px) */
     .eink-home-cover {
       margin: 0 calc(20px * var(--eink-scale));            /* contentSidePadding */
       height: calc(242px * var(--eink-scale));             /* homeCoverTileHeight */
@@ -223,7 +223,7 @@
       text-align: center;
       flex-shrink: 0;
     }
-    /* Cover with actual image — e-ink grayscale look, whites tinted to paper color */
+    /* Cover with actual image: e-ink grayscale look, whites tinted to paper color */
     .eink-home-cover .cover.cover-image {
       padding: 0;
       background-size: cover;
@@ -271,7 +271,7 @@
       color: var(--eink-ink);
     }
 
-    /* Main menu — 16px gap below cover tile (verticalSpacing) */
+    /* Main menu: 16px gap below cover tile (verticalSpacing) */
     .eink-menu {
       margin: calc(16px * var(--eink-scale)) calc(20px * var(--eink-scale)) 0;
       position: relative;
@@ -296,7 +296,7 @@
       flex-shrink: 0;
     }
 
-    /* Button hints — rendered exactly per drawButtonHints:
+    /* Button hints: rendered exactly per drawButtonHints:
        x positions [58, 146, 254, 342], width 80, height 40 (empty = 15) */
     .eink-hints {
       position: absolute;
@@ -311,7 +311,7 @@
       width: calc(80px * var(--eink-scale));
       height: calc(40px * var(--eink-scale));
       background: var(--eink-paper);
-      /* Firmware draws top + left + right only (no bottom stroke) — pill blends into screen edge */
+      /* Firmware draws top + left + right only (no bottom stroke); pill blends into screen edge */
       border-top: calc(1px * var(--eink-scale)) solid var(--eink-ink);
       border-left: calc(1px * var(--eink-scale)) solid var(--eink-ink);
       border-right: calc(1px * var(--eink-scale)) solid var(--eink-ink);
@@ -362,7 +362,7 @@
       border-radius: calc(6px * var(--eink-scale));
     }
 
-    /* Tab bar — drawTabBar (tab-bar-focused state):
+    /* Tab bar: drawTabBar (tab-bar-focused state):
        whole bar has dithered light-gray bg, selected tab is a black pill with inverted text. */
     .eink-tabs {
       display: flex;
@@ -445,19 +445,30 @@
       background: var(--eink-ink);
     }
 
+    /* RTL reader page: right-to-left layout for Hebrew, Arabic, etc. */
+    .eink-reader-body.rtl {
+      direction: rtl;
+      text-align: justify;
+      font-family: 'Noto Serif Hebrew', 'Noto Serif', serif;
+    }
+    .eink-reader-body.rtl h3 + p::first-letter {
+      float: right;
+      padding: calc(4px * var(--eink-scale)) 0 0 calc(6px * var(--eink-scale));
+    }
 
-    /* Theme compare — 3 mini devices side-by-side */
+
+    /* Theme compare: 3 mini devices side-by-side */
     .eink-theme-classic { --eink-sel: transparent; }
     .eink-theme-classic .eink-menu-row.selected { outline: calc(2px * var(--eink-scale)) solid var(--eink-ink); outline-offset: calc(-2px * var(--eink-scale)); border-radius: 0; }
     .eink-theme-classic .eink-menu-row { border-radius: 0; }
 
-    /* Dithered "gray" fill using a CSS gradient — fallback for areas meant to look dithered */
+    /* Dithered "gray" fill using a CSS gradient; fallback for areas meant to look dithered */
     .eink-dither {
       background-image:
         repeating-linear-gradient(45deg, var(--eink-ink) 0 1px, transparent 1px 3px);
     }
 
-    /* Community photo marquee — seamless horizontal auto-scroll */
+    /* Community photo marquee: seamless horizontal auto-scroll */
     .marquee {
       overflow: hidden;
       width: 100%;
@@ -509,7 +520,7 @@
   <script src="https://cdn.usefathom.com/script.js" data-site="OHQZUNQD" defer></script>
 </head>
 <body class="min-h-dvh bg-stone-50 font-sans">
-  <!-- Firmware icon sprite — bitmaps extracted directly from /src/components/icons/ -->
+  <!-- Firmware icon sprite: bitmaps extracted directly from /src/components/icons/ -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
       <symbol id="icon-folder" viewBox="0 0 32 32"><g fill="currentColor" shape-rendering="crispEdges"><rect x="4" y="3" width="9" height="1"/><rect x="2" y="4" width="12" height="1"/><rect x="2" y="5" width="2" height="1"/><rect x="11" y="5" width="3" height="1"/><rect x="2" y="6" width="2" height="1"/><rect x="12" y="6" width="3" height="1"/><rect x="2" y="7" width="2" height="1"/><rect x="13" y="7" width="16" height="1"/><rect x="2" y="8" width="2" height="1"/><rect x="14" y="8" width="16" height="1"/><rect x="2" y="9" width="2" height="1"/><rect x="27" y="9" width="3" height="1"/><rect x="2" y="10" width="2" height="1"/><rect x="28" y="10" width="2" height="1"/><rect x="2" y="11" width="2" height="1"/><rect x="28" y="11" width="2" height="1"/><rect x="2" y="12" width="2" height="1"/><rect x="28" y="12" width="2" height="1"/><rect x="2" y="13" width="2" height="1"/><rect x="28" y="13" width="2" height="1"/><rect x="2" y="14" width="2" height="1"/><rect x="28" y="14" width="2" height="1"/><rect x="2" y="15" width="2" height="1"/><rect x="28" y="15" width="2" height="1"/><rect x="2" y="16" width="2" height="1"/><rect x="28" y="16" width="2" height="1"/><rect x="2" y="17" width="2" height="1"/><rect x="28" y="17" width="2" height="1"/><rect x="2" y="18" width="2" height="1"/><rect x="28" y="18" width="2" height="1"/><rect x="2" y="19" width="2" height="1"/><rect x="28" y="19" width="2" height="1"/><rect x="2" y="20" width="2" height="1"/><rect x="28" y="20" width="2" height="1"/><rect x="2" y="21" width="2" height="1"/><rect x="28" y="21" width="2" height="1"/><rect x="2" y="22" width="2" height="1"/><rect x="28" y="22" width="2" height="1"/><rect x="2" y="23" width="2" height="1"/><rect x="28" y="23" width="2" height="1"/><rect x="2" y="24" width="2" height="1"/><rect x="28" y="24" width="2" height="1"/><rect x="2" y="25" width="4" height="1"/><rect x="27" y="25" width="3" height="1"/><rect x="3" y="26" width="27" height="1"/><rect x="4" y="27" width="23" height="1"/></g></symbol>
@@ -868,16 +879,138 @@
         </div>
       </div>
 
+      <!-- Feature 5: Bookmarks (bookmarks list cutout, reversed) -->
+      <div class="mt-24 grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+        <div class="relative order-last mx-auto lg:order-first">
+          <div class="eink eink-s-55 sm:eink-s-60">
+            <div class="eink-bare shadow-[0_30px_60px_-20px_rgba(0,0,0,0.25)]">
+              <div class="eink-header">
+                <div class="eink-header-title">Bookmarks</div>
+                <div class="eink-header-sub">Pride and Prejudice</div>
+                <div class="eink-battery"><span>87%</span><svg><use href="#icon-battery-3"/></svg></div>
+              </div>
+
+              <!-- Each saved bookmark keeps its page + reading percentage (per #2188) -->
+              <div class="eink-list">
+                <div class="eink-list-row selected"><span class="eink-list-row-label">&ldquo;…must be in want of a wife.&rdquo;</span><span class="eink-list-row-value">4%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;Netherfield Park is let at last&rdquo;</span><span class="eink-list-row-value">6%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;A single man of large fortune&rdquo;</span><span class="eink-list-row-value">9%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;They attacked him in various ways&rdquo;</span><span class="eink-list-row-value">12%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;I see no occasion for that.&rdquo;</span><span class="eink-list-row-value">14%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;You take delight in vexing me.&rdquo;</span><span class="eink-list-row-value">17%</span></div>
+                <div class="eink-list-row"><span class="eink-list-row-label">&ldquo;An invitation to dinner&rdquo;</span><span class="eink-list-row-value">21%</span></div>
+              </div>
+
+              <div class="eink-hints">
+                <div class="eink-hint">Back</div>
+                <div class="eink-hint">Delete</div>
+                <div class="eink-hint">Up</div>
+                <div class="eink-hint">Down</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold tracking-wider text-brand-500 uppercase">Reading</p>
+          <h3 class="mt-3 max-w-[22ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance sm:text-4xl">Bookmark any passage.</h3>
+          <p class="mt-4 max-w-[52ch] text-base/7 text-stone-500 text-pretty">Hold Confirm anywhere in the reader to drop a bookmark. Every saved spot remembers its page and reading percentage, so you can flip back to a favourite passage in a tap.</p>
+          <ul role="list" class="mt-6 space-y-3 text-sm/6 text-stone-600">
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>Hold Confirm in the reader to save your spot</li>
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>Each entry shows its page number and percentage</li>
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>Jump straight to any bookmark, or delete ones you're done with</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Feature 6: Reading aids: Focus Reading + RTL (stacked frames) -->
+      <div class="mt-24 grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+        <div>
+          <p class="text-xs font-semibold tracking-wider text-brand-500 uppercase">Reading aids</p>
+          <h3 class="mt-3 max-w-[22ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance sm:text-4xl">Tuned to how you read.</h3>
+          <p class="mt-4 max-w-[52ch] text-base/7 text-stone-500 text-pretty">Focus Reading bolds the front of each word to guide your eye and set your pace. And full right-to-left layout brings the EPUB and text readers to languages like Hebrew and Arabic, with matching interface translations.</p>
+          <ul role="list" class="mt-6 space-y-3 text-sm/6 text-stone-600">
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>Focus Reading bolds leading characters to pull your eye through the text</li>
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>Right-to-left layout in both the EPUB and plain-text readers</li>
+            <li class="flex gap-3"><svg class="mt-0.5 size-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>RTL-ready interface translations, including a full Hebrew UI</li>
+          </ul>
+        </div>
+
+        <!-- Stacked frames: Focus Reading behind, RTL in front -->
+        <div class="relative mx-auto" style="width:min(100%,360px);height:520px">
+          <!-- Back frame: Focus Reading (bolded word stems) -->
+          <div class="eink eink-s-50 absolute left-0 top-1" style="transform:rotate(-5deg)">
+            <div class="eink-bare shadow-[0_24px_50px_-18px_rgba(0,0,0,0.28)]">
+              <div class="eink-reader-body">
+                <p><b>Ca</b>ll <b>me</b> <b>Ishma</b>el. <b>So</b>me <b>yea</b>rs <b>a</b>go, <b>ne</b>ver <b>mi</b>nd <b>ho</b>w <b>lo</b>ng <b>precis</b>ely, <b>hav</b>ing <b>li</b>ttle <b>or</b> <b>no</b> <b>mo</b>ney <b>in</b> <b>my</b> <b>pur</b>se, <b>a</b>nd <b>noth</b>ing <b>partic</b>ular <b>to</b> <b>inter</b>est <b>me</b> <b>on</b> <b>sho</b>re, <b>I</b> <b>thou</b>ght <b>I</b> <b>wou</b>ld <b>sa</b>il <b>abo</b>ut <b>a</b> <b>li</b>ttle <b>a</b>nd <b>se</b>e <b>th</b>e <b>wat</b>ery <b>pa</b>rt <b>of</b> <b>th</b>e <b>wor</b>ld.</p>
+                <p><b>It</b> <b>is</b> <b>a</b> <b>w</b>ay <b>I</b> <b>ha</b>ve <b>of</b> <b>driv</b>ing <b>of</b>f <b>th</b>e <b>spl</b>een <b>a</b>nd <b>regula</b>ting <b>th</b>e <b>circula</b>tion. <b>Whe</b>never <b>I</b> <b>fi</b>nd <b>mys</b>elf <b>grow</b>ing <b>gr</b>im <b>abo</b>ut <b>th</b>e <b>mou</b>th; <b>when</b>ever <b>it</b> <b>is</b> <b>a</b> <b>da</b>mp, <b>driz</b>zly <b>Nove</b>mber <b>in</b> <b>my</b> <b>so</b>ul; <b>th</b>en <b>I</b> <b>acco</b>unt <b>it</b> <b>hi</b>gh <b>ti</b>me <b>to</b> <b>g</b>et <b>to</b> <b>se</b>a <b>a</b>s <b>so</b>on <b>a</b>s <b>I</b> <b>ca</b>n.</p>
+                <p><b>The</b>re <b>is</b> <b>noth</b>ing <b>surpri</b>sing <b>in</b> <b>th</b>is. <b>If</b> <b>th</b>ey <b>b</b>ut <b>kn</b>ew <b>it</b>, <b>almo</b>st <b>a</b>ll <b>m</b>en <b>in</b> <b>th</b>eir <b>degr</b>ee, <b>so</b>me <b>ti</b>me <b>or</b> <b>oth</b>er, <b>cher</b>ish <b>ve</b>ry <b>nea</b>rly <b>th</b>e <b>sa</b>me <b>feel</b>ings <b>towa</b>rds <b>th</b>e <b>oce</b>an <b>wi</b>th <b>me</b>.</p>
+              </div>
+              <div class="eink-reader-progress-track"><div style="width:11%"></div></div>
+              <div class="eink-reader-status"><span>Moby-Dick</span><span>11%</span></div>
+            </div>
+          </div>
+
+          <!-- Front frame: right-to-left reader -->
+          <div class="eink eink-s-55 absolute right-0 bottom-0" style="transform:rotate(4deg);z-index:2">
+            <div class="eink-bare shadow-[0_30px_60px_-20px_rgba(0,0,0,0.3)]">
+              <div class="eink-reader-body rtl">
+                <p>בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ. וְהָאָרֶץ הָיְתָה תֹהוּ וָבֹהוּ, וְחֹשֶׁךְ עַל־פְּנֵי תְהוֹם, וְרוּחַ אֱלֹהִים מְרַחֶפֶת עַל־פְּנֵי הַמָּיִם.</p>
+                <p>וַיֹּאמֶר אֱלֹהִים: יְהִי אוֹר. וַיְהִי אוֹר. וַיַּרְא אֱלֹהִים אֶת־הָאוֹר כִּי־טוֹב, וַיַּבְדֵּל אֱלֹהִים בֵּין הָאוֹר וּבֵין הַחֹשֶׁךְ.</p>
+                <p>וַיִּקְרָא אֱלֹהִים לָאוֹר יוֹם, וְלַחֹשֶׁךְ קָרָא לָיְלָה. וַיְהִי עֶרֶב וַיְהִי בֹקֶר, יוֹם אֶחָד.</p>
+                <p>וַיֹּאמֶר אֱלֹהִים: יְהִי רָקִיעַ בְּתוֹךְ הַמָּיִם, וִיהִי מַבְדִּיל בֵּין מַיִם לָמָיִם. וַיַּעַשׂ אֱלֹהִים אֶת־הָרָקִיעַ, וַיַּבְדֵּל בֵּין הַמַּיִם אֲשֶׁר מִתַּחַת לָרָקִיעַ וּבֵין הַמַּיִם אֲשֶׁר מֵעַל לָרָקִיעַ.</p>
+              </div>
+              <div class="eink-reader-progress-track"><div style="width:4%"></div></div>
+              <div class="eink-reader-status"><span>בְּרֵאשִׁית</span><span>4%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Secondary features grid -->
       <div class="mt-24 border-t border-stone-200 pt-16">
-        <dl class="grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4" role="list">
+        <p class="text-xs font-semibold tracking-wider text-brand-500 uppercase">New since 1.3</p>
+        <h3 class="mt-3 max-w-[28ch] font-serif text-2xl font-medium tracking-tight text-stone-900 text-balance sm:text-3xl">And a stack of smaller upgrades.</h3>
+        <dl class="mt-10 grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4" role="list">
           <div>
-            <dt class="text-sm font-semibold text-stone-900">Localisation</dt>
-            <dd class="mt-1.5 text-sm/6 text-stone-500">UI translations for English, Spanish, French, German, Italian, Portuguese, Russian, Ukrainian, Polish,and more.</dd>
+            <dt class="text-sm font-semibold text-stone-900">Custom Sleep Timer</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Pick any sleep delay from 1 to 30 minutes, or set it to never sleep at all.</dd>
           </div>
           <div>
-            <dt class="text-sm font-semibold text-stone-900">UI Themes</dt>
-            <dd class="mt-1.5 text-sm/6 text-stone-500">Four custom themes to choose from: Classic, Lyra, Lyra 3 Covers, and Roundedraff. Four screen orientations.</dd>
+            <dt class="text-sm font-semibold text-stone-900">Quick Resume</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Show the page you were reading as the sleep screen and wake straight back into the book.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Themed Menus</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Built-in themes (Classic, Lyra, Lyra 3 Covers, and Roundedraff) now style the reader menus too.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Tilt to Turn <span class="text-stone-400">· X3</span></dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">On the X3, the built-in motion sensor turns pages with a gentle tilt of the device.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">On-device Clock <span class="text-stone-400">· X3</span></dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">X3 builds keep time with a real-time clock and sync over NTP whenever they're online.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Configurable Buttons</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Page turns follow the screen orientation, and the side buttons can be disabled entirely.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Richer Rendering</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Superscripts, subscripts, and horizontal rules now render for cleaner footnotes and section breaks.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Enhanced AA &amp; Page Speed</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Smoother grayscale anti-aliasing and tiled rendering with silent pre-indexing for faster, cleaner page turns.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Tidy Recents</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">Remove books from the recent list by hand, or auto-clear them once you finish reading.</dd>
+          </div>
+          <div>
+            <dt class="text-sm font-semibold text-stone-900">Localisation</dt>
+            <dd class="mt-1.5 text-sm/6 text-stone-500">UI translations for Hebrew, Spanish, French, German, Italian, Portuguese, Russian, Ukrainian, Polish, and more.</dd>
           </div>
           <div>
             <dt class="text-sm font-semibold text-stone-900">Calibre Plugin</dt>
@@ -1099,7 +1232,7 @@
     </script>
   </section>
 
-  <!-- Locked device CTA — anchor #unlock-tool is linked publicly, keep it -->
+  <!-- Locked device CTA: anchor #unlock-tool is linked publicly, keep it -->
   <section id="unlock-tool" class="scroll-mt-20 border-t border-stone-200 bg-stone-50 py-16 sm:py-20">
     <div class="mx-auto max-w-3xl px-6 text-center">
       <h2 class="mx-auto max-w-[24ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance">Have a locked device?</h2>
@@ -1108,7 +1241,7 @@
       <!-- Primary path: SD card flashing -->
       <div class="mx-auto mt-8 max-w-xl rounded-2xl border border-stone-200 bg-white p-6 text-left shadow-sm ring-1 ring-stone-950/5 sm:p-7">
         <h3 class="text-sm font-semibold text-stone-900">Flash from SD card</h3>
-        <p class="mt-1 text-xs text-stone-400">Recommended for X3 and X4 — works even on stock firmware.</p>
+        <p class="mt-1 text-xs text-stone-400">Recommended for X3 and X4, even on stock firmware.</p>
         <ol class="mt-5 space-y-4">
           <li class="flex gap-3">
             <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">1</span>
@@ -1128,7 +1261,7 @@
             <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
             <span id="sd-download-label">Download firmware (update.bin)</span>
           </button>
-          <p id="sd-download-status" class="mt-2 text-xs text-stone-400">Latest stable release — same firmware for X3 and X4.</p>
+          <p id="sd-download-status" class="mt-2 text-xs text-stone-400">Latest stable release, the same firmware for X3 and X4.</p>
         </div>
         <p class="mt-6 border-t border-stone-200 pt-5 text-center text-sm/6 font-semibold text-red-600">
           <a href="https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vTGCAP5BJhmS0E3cLlK5jZh7MeP9ZDforBp6f6kzfXUmZR7r0NIuUddxJ5A7q_HhBn86S7x17lu0MEn/pubhtml?gid=0&single=true&pli=1" target="_blank" rel="noopener" class="text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 hover:decoration-red-500">DO NOT FLASH ANY OTHER FIRMWARE THAT DOES NOT INCLUDE SD FLASHING OR OTA UPDATE FUNCTIONALITY</a>
@@ -1298,7 +1431,7 @@
     function renderMarkdown(str, linkClass) {
       const cls = linkClass || 'font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700';
       let html = escapeHtml(str);
-      // [text](url) — text and url are already escaped; sanitize url scheme.
+      // [text](url): text and url are already escaped; sanitize url scheme.
       html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, text, url) =>
         '<a href="' + safeUrl(url) + '" target="_blank" rel="noopener" class="' + cls + '">' + text + '</a>'
       );
@@ -1335,7 +1468,7 @@
         el.innerHTML = renderMarkdown(banner.text, 'underline underline-offset-2 text-white hover:text-brand-100');
         el.classList.remove('hidden');
       } catch (err) {
-        // Silent fail — banner is optional.
+        // Silent fail; banner is optional.
       }
     }
     loadSiteBanner();
@@ -1635,7 +1768,7 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          status.textContent = 'Saved as update.bin — copy it to your SD card root.';
+          status.textContent = 'Saved as update.bin. Copy it to your SD card root.';
         } catch (err) {
           status.textContent = `Error: ${err.message}`;
         } finally {
