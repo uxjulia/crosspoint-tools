@@ -527,34 +527,34 @@
     </defs>
   </svg>
   <nav class="border-b border-stone-200 bg-white">
-    <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <a href="/" class="flex min-w-0 items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-3 px-4 py-3 sm:flex-nowrap sm:px-6">
+      <a href="/" class="order-1 flex min-w-0 shrink-0 items-center gap-2 text-stone-900 no-underline" aria-label="Homepage">
         <img src="/logo.png" alt="" class="size-7 shrink-0 rounded-md">
         <span class="text-sm/5 font-medium tracking-tight sm:text-sm/6">
           <span class="sm:hidden">CrossPoint</span>
           <span class="hidden sm:inline">CrossPoint Reader</span>
         </span>
       </a>
-      <div class="flex w-full flex-wrap items-center justify-between sm:ml-6 sm:flex-1">
-        <a href="/fonts" class="rounded-md px-3 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
+      <div class="order-3 flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-2 sm:order-2 sm:ml-0 sm:w-auto sm:flex-1 sm:justify-center">
+        <a href="/fonts" class="rounded-md px-2.5 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
           <span class="sm:hidden">Fonts</span>
-          <span class="hidden sm:inline">Font Builder <span class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span></span>
+          <span class="hidden sm:inline">Font Builder</span>
         </a>
-        <a href="/roadmap" class="rounded-md px-3 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">Roadmap</a>
-        <a href="#" data-open-download-modal class="rounded-md px-3 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
+        <a href="/roadmap" class="rounded-md px-2.5 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">Roadmap</a>
+        <a href="#" data-open-download-modal class="rounded-md px-2.5 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
           <span class="sm:hidden">Download</span>
           <span class="hidden sm:inline">Download Firmware</span>
         </a>
-        <a href="/#unlock-tool" class="rounded-md px-3 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
-          <span class="sm:hidden">Unlock</span>
-          <span class="hidden sm:inline">Unlock Tool</span>
-        </a>
-        <a href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#B8953A] py-1.5 pr-3 pl-2 text-xs/5 font-semibold text-white no-underline transition-colors hover:bg-[#9A7A2E] sm:text-sm/5">
-          <img src="/crown.svg" alt="" class="size-4 brightness-0 invert">
-          <span class="sm:hidden">Fund</span>
-          <span class="hidden sm:inline">Fund CrossPoint</span>
+        <a href="/#unlock-tool" class="rounded-md px-2.5 py-1.5 text-xs/5 font-medium text-stone-500 no-underline hover:text-stone-700 sm:text-sm/5">
+          <span class="sm:hidden">Locked?</span>
+          <span class="hidden sm:inline">Have a locked device?</span>
         </a>
       </div>
+      <a href="https://app.royalty.dev/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener" class="order-2 inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#B8953A] py-1.5 pr-3 pl-2 text-xs/5 font-semibold text-white no-underline transition-colors hover:bg-[#9A7A2E] sm:order-3 sm:text-sm/5">
+        <img src="/crown.svg" alt="" class="size-4 brightness-0 invert">
+        <span class="sm:hidden">Fund</span>
+        <span class="hidden sm:inline">Fund CrossPoint</span>
+      </a>
     </div>
   </nav>
 
@@ -1099,32 +1099,44 @@
     </script>
   </section>
 
-  <!-- Unlock Tool CTA -->
+  <!-- Locked device CTA — anchor #unlock-tool is linked publicly, keep it -->
   <section id="unlock-tool" class="scroll-mt-20 border-t border-stone-200 bg-stone-50 py-16 sm:py-20">
     <div class="mx-auto max-w-3xl px-6 text-center">
-      <h2 class="mx-auto max-w-[24ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance">OTA Xteink Unlocker.</h2>
-      <p class="mt-2"><a href="https://github.com/crosspoint-reader/crosspoint-tools" class="text-sm font-medium text-stone-600 underline decoration-stone-300 underline-offset-4 hover:text-stone-900 hover:decoration-stone-900">Open Sourced on GitHub</a></p>
-      <p class="mx-auto mt-3 max-w-[60ch] text-base/7 text-stone-500 text-pretty">Recent Xteink shipments may ship with USB flashing disabled. Xteink Unlocker turns your computer into a local hotspot that intercepts the device's official update channel and serves CrossPoint or Crossink instead of the stock firmware.</p>
-      <p class="mx-auto mt-3 max-w-[60ch] text-base/7 text-stone-500 text-pretty">Available for macOS, Windows, and Linux, including ARM64 builds for Raspberry Pi OS.</p>
-      <div class="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-        <a href="https://unlocker-releases.crosspointreader.com/unlocker-latest.dmg" class="inline-flex items-center gap-2 rounded-lg bg-stone-900 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900">
-          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
-          Download for macOS (.dmg)
-        </a>
-        <a href="https://unlocker-releases.crosspointreader.com/unlocker-latest.msi" class="inline-flex items-center gap-2 rounded-lg bg-stone-900 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900">
-          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
-          Download for Windows (.msi)
-        </a>
-        <a href="https://unlocker-releases.crosspointreader.com/unlocker-latest.deb" class="inline-flex items-center gap-2 rounded-lg bg-stone-900 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900">
-          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
-          Download for Linux x64 (.deb)
-        </a>
-        <a href="https://unlocker-releases.crosspointreader.com/unlocker-latest-arm64.deb" class="inline-flex items-center gap-2 rounded-lg bg-stone-900 py-2.5 pr-4 pl-3 text-sm font-semibold text-white no-underline hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900">
-          <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
-          Download for Raspberry Pi (.deb)
-        </a>
+      <h2 class="mx-auto max-w-[24ch] font-serif text-3xl font-medium tracking-tight text-stone-900 text-balance">Have a locked device?</h2>
+      <p class="mx-auto mt-3 max-w-[60ch] text-base/7 text-stone-500 text-pretty">International Xteink devices (including those from AliExpress) ship with USB flashing disabled. We recommend using the SD flashing method to get CrossPoint on your device. Please be aware that this does not unlock your USB flashing capabilities, but it does allow flashing of custom firmware.</p>
+
+      <!-- Primary path: SD card flashing -->
+      <div class="mx-auto mt-8 max-w-xl rounded-2xl border border-stone-200 bg-white p-6 text-left shadow-sm ring-1 ring-stone-950/5 sm:p-7">
+        <h3 class="text-sm font-semibold text-stone-900">Flash from SD card</h3>
+        <p class="mt-1 text-xs text-stone-400">Recommended for X3 and X4 — works even on stock firmware.</p>
+        <ol class="mt-5 space-y-4">
+          <li class="flex gap-3">
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">1</span>
+            <p class="text-sm/6 text-stone-600">Download <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-xs text-stone-700">update.bin</code> below and copy it to the SD card root.</p>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">2</span>
+            <p class="text-sm/6 text-stone-600">Plug USB into power, then hold the <span class="font-semibold text-stone-900">power + up</span> buttons <span class="text-stone-500">(Top left button for X3)</span>.</p>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">3</span>
+            <p class="text-sm/6 text-stone-600">The OEM bootloader flashes CrossPoint from the SD card.</p>
+          </li>
+        </ol>
+        <div class="mt-6">
+          <button id="sd-download-btn" type="button" class="inline-flex items-center gap-2 rounded-lg bg-brand-500 py-2.5 pr-4 pl-3 text-sm font-semibold text-white hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50">
+            <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
+            <span id="sd-download-label">Download firmware (update.bin)</span>
+          </button>
+          <p id="sd-download-status" class="mt-2 text-xs text-stone-400">Latest stable release — same firmware for X3 and X4.</p>
+        </div>
+        <p class="mt-6 border-t border-stone-200 pt-5 text-center text-sm/6 font-semibold text-red-600">
+          <a href="https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vTGCAP5BJhmS0E3cLlK5jZh7MeP9ZDforBp6f6kzfXUmZR7r0NIuUddxJ5A7q_HhBn86S7x17lu0MEn/pubhtml?gid=0&single=true&pli=1" target="_blank" rel="noopener" class="text-red-600 underline decoration-red-300 underline-offset-2 hover:text-red-700 hover:decoration-red-500">DO NOT FLASH ANY OTHER FIRMWARE THAT DOES NOT INCLUDE SD FLASHING OR OTA UPDATE FUNCTIONALITY</a>
+        </p>
       </div>
-      <p class="mx-auto mt-4 max-w-[52ch] text-xs text-stone-400">Use at your own risk. USB flashing will still be disabled but you can use this tool to flash updated firmware any time.</p>
+
+      <!-- Secondary, deprioritized: OTA Unlocker -->
+      <p class="mx-auto mt-8 max-w-[60ch] text-sm/6 text-stone-500 text-pretty">Stuck on a firmware that doesn't support SD flashing? Use the <a href="/unlocker" class="font-medium text-brand-600 underline decoration-brand-300 underline-offset-4 hover:text-brand-700 hover:decoration-brand-500">OTA Unlocker Tool</a>.</p>
     </div>
   </section>
 
@@ -1598,6 +1610,40 @@
   <script type="module">
     import { initDownloadModal } from '/js/download-modal.js';
     initDownloadModal();
+  </script>
+  <script>
+    // SD flashing: one-click download of the latest stable release as update.bin.
+    // The stable firmware is the same binary for X3 and X4, so no device picker is needed.
+    (function () {
+      const btn = document.getElementById('sd-download-btn');
+      if (!btn) return;
+      const label = document.getElementById('sd-download-label');
+      const status = document.getElementById('sd-download-status');
+      btn.addEventListener('click', async () => {
+        const original = label.textContent;
+        btn.disabled = true;
+        label.textContent = 'Downloading...';
+        try {
+          const res = await fetch('/api/release/firmware');
+          if (!res.ok) throw new Error(`Download failed (${res.status})`);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'update.bin';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          status.textContent = 'Saved as update.bin — copy it to your SD card root.';
+        } catch (err) {
+          status.textContent = `Error: ${err.message}`;
+        } finally {
+          btn.disabled = false;
+          label.textContent = original;
+        }
+      });
+    })();
   </script>
 </body>
 </html>

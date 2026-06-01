@@ -47,7 +47,8 @@ const MODAL_HTML = `
           <svg class="mr-1.5 size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 16.5V3"/></svg>
           <span id="dl-download-label">Download .bin</span>
         </button>
-        <p id="dl-status" class="mt-2 text-xs text-stone-400"></p>
+        <p class="mt-2 text-xs text-stone-400">Saves as <code class="rounded bg-stone-100 px-1 py-0.5 font-mono text-[11px] text-stone-600">update.bin</code>, ready to drop on your SD card root.</p>
+        <p id="dl-status" class="mt-1 text-xs text-stone-400"></p>
       </div>
     </div>
   </div>
@@ -159,6 +160,13 @@ function renderFirmwareList() {
     return (b.released_at || '').localeCompare(a.released_at || '');
   });
 
+  // Default to the latest stable release (falling back to the top of the list,
+  // e.g. for X3 which has no stable build) so SD flashing is one click away.
+  if (!state.selectedReleaseId && sorted.length) {
+    const preferred = sorted.find(r => r.channel === 'stable') || sorted[0];
+    state.selectedReleaseId = preferred.id;
+  }
+
   list.innerHTML = sorted.map(r => {
     const isSel = r.id === state.selectedReleaseId;
     const cls = isSel
@@ -221,7 +229,8 @@ async function downloadSelected() {
     const res = await fetch(r.firmware_url);
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);
     const blob = await res.blob();
-    const filename = `crosspoint-${r.channel}-${(r.version || r.name || r.id).replace(/[^a-zA-Z0-9._-]+/g, '-')}-${state.model}.bin`;
+    // SD card flashing requires the file to be named update.bin on the card root.
+    const filename = 'update.bin';
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
