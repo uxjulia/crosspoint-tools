@@ -599,6 +599,15 @@
           </a>
         </div>
 
+        <!-- Developer edition callout -->
+        <div class="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p class="text-sm text-stone-500">Looking for the unlocked developer edition Xteink?</p>
+          <button type="button" data-open-buy-modal class="inline-flex items-center gap-1.5 rounded-lg bg-white py-1.5 pr-3 pl-2.5 text-sm font-semibold text-brand-600 shadow-sm ring-1 ring-stone-950/10 hover:bg-stone-50 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500">
+            <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z"/></svg>
+            Buy Here
+          </button>
+        </div>
+
       </div>
 
       <!-- Device mockup: home screen, scaled 0.55 → ≈290×440 + bezel -->
@@ -710,7 +719,7 @@
 
     <!-- As featured on: press logo crawl -->
     <div class="relative border-t border-stone-200/70">
-      <div class="mx-auto max-w-6xl px-6 pt-2 pb-12">
+      <div class="mx-auto max-w-6xl px-6 pt-12 pb-12">
         <p class="text-center text-sm font-semibold uppercase tracking-[0.2em] text-stone-400">As featured on</p>
         <div class="mt-7 flex flex-wrap items-center justify-center gap-x-14 gap-y-8 sm:gap-x-20">
           <img src="/press/techcrunch.svg" alt="TechCrunch" class="h-7 w-auto opacity-40 [filter:brightness(0)] transition-opacity hover:opacity-70 sm:h-9" loading="lazy">
@@ -1754,7 +1763,9 @@
   </script>
   <script type="module">
     import { initDownloadModal } from '/js/download-modal.js';
+    import { initBuyModal } from '/js/buy-modal.js';
     initDownloadModal();
+    initBuyModal();
   </script>
   <script>
     // SD flashing: one-click download of the latest stable release as update.bin.
