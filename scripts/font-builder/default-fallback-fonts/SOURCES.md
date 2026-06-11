@@ -22,15 +22,8 @@ Downloaded from upstream Noto repositories:
 - `NotoSansMath-Regular.ttf`: `https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansMath/NotoSansMath-Regular.ttf`
 - `NotoSansSymbols-Regular.ttf`: `https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansSymbols/NotoSansSymbols-Regular.ttf`
 - `NotoSansSymbols2-Regular.ttf`: `https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf`
+- `NotoEmoji-Regular.ttf`: `https://github.com/googlefonts/noto-emoji`
 - `NotoSansCJKsc-Regular.otf`: `https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf`
-
-`NotoEmoji-Regular.ttf` is the monochrome Noto Emoji font already used by
-CrossInk's firmware font pipeline, copied from
-`lib/EpdFont/builtinFonts/source/NotoEmoji/NotoEmoji-Regular.ttf` at CrossInk
-commit `e6a02fa94a866d1e2dbe854a4c4fcf1466abe943` (`feat: add emoji support`).
-It is used here instead of `NotoColorEmoji` because the color bitmap/COLRv1
-files are not compatible with the current grayscale FreeType raster path used by
-`fontconvert_sdcard.py`.
 
 ## SHA-256
 

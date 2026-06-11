@@ -15,7 +15,7 @@ on:
       intervals:
         description: 'Codepoint interval presets'
         required: false
-        default: 'builtin'
+        default: 'base'
       webhookBaseUrl:
         description: 'Base URL for webhook callbacks'
         required: false

@@ -33,6 +33,20 @@ committed to this repo so CI builds do not depend on downloading fonts at build
 time. Noto color emoji fonts are intentionally not used because the current
 converter rasterizes monochrome FreeType glyph bitmaps.
 
+## Interval coverage behavior
+
+Every generated `.cpfont` includes `base` coverage first. `base` is intentionally
+small: ASCII/basic Latin plus Unicode General Punctuation. This keeps ordinary
+letters, numbers, spaces, smart quotes, dashes, and ellipses available without
+forcing broad Latin/Cyrillic/math coverage into large CJK or Hangul builds.
+
+`default` is an optional preset for broad CrossPoint-style reading coverage. Any
+`--intervals` presets or custom ranges are additive on top of `base`. The final
+interval list is merged and deduplicated before glyph coverage is resolved.
+The `reading` preset intentionally includes `default` coverage plus its
+fiction-oriented extras, preserving the older behavior where selecting
+`reading` also gave users the built-in/default readable ranges.
+
 If you resync from upstream later, treat it like a real vendor update:
 
 - compare output compatibility

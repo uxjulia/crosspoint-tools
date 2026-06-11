@@ -31,7 +31,7 @@ DEFAULT_FALLBACK_FILES = [
 ]
 
 ALLOWED_MISSING_ASSIGNED = {
-    "builtin": {(0x20C0, 0x20C0)},
+    "default": {(0x20C0, 0x20C0)},
     "cjk": {(0x9FF0, 0x9FFF), (0xFA70, 0xFAFF)},
     "hebrew": {(0x05EF, 0x05EF)},
     "reading": {(0x20C0, 0x20C0), (0x2E53, 0x2E5D)},
