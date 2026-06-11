@@ -604,7 +604,8 @@ def rasterize_font_style(fontfile, size, intervals, style_id=0, force_autohint=F
     print(f"  [{style_label}] Validated: {len(intervals)} intervals, {total_glyphs} glyphs", file=sys.stderr)
     coverage_parts = [f"{len(source_codepoints[0])} primary"]
     for idx in range(1, len(source_codepoints)):
-        coverage_parts.append(f"{len(source_codepoints[idx])} fallback{idx}")
+        fallback_name = os.path.basename(fallback_fontfiles[idx - 1]) if fallback_fontfiles else f"fallback{idx}"
+        coverage_parts.append(f"{len(source_codepoints[idx])} fallback{idx} ({fallback_name})")
     print(f"  [{style_label}] Coverage split: {', '.join(coverage_parts)}", file=sys.stderr)
 
     # Rasterize all glyphs
@@ -961,6 +962,9 @@ def main():
                         help="Fallback font file for italic style.")
     parser.add_argument("--fallback-bolditalic", dest="fallback_font_bolditalic",
                         help="Fallback font file for bold-italic style.")
+    parser.add_argument("--default-fallback-font", dest="default_fallback_fonts",
+                        action="append", default=[],
+                        help="Bundled default fallback font file. Repeat to append multiple fonts after user fallbacks.")
 
     args = parser.parse_args()
 
@@ -993,6 +997,8 @@ def main():
         fallback_style_fonts.setdefault(2, []).append(args.fallback_font_italic)
     if args.fallback_font_bolditalic:
         fallback_style_fonts.setdefault(3, []).append(args.fallback_font_bolditalic)
+    for default_fallback_font in args.default_fallback_fonts:
+        fallback_style_fonts.setdefault(0, []).append(default_fallback_font)
 
     is_multistyle = len(style_fonts) > 0
     fontfile = args.fontfile
